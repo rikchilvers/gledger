@@ -9,21 +9,6 @@ import (
 	"time"
 )
 
-// Runes
-const (
-	zero           = rune('0')
-	nine           = rune('9')
-	tab            = rune('\t')
-	newline        = rune('\n')
-	carriageReturn = rune('\r')
-	space          = rune(' ')
-	semicolon      = rune(';')
-	exclamation    = rune('!')
-	star           = rune('*')
-	forwardSlash   = rune('/')
-	hash           = rune('#')
-)
-
 type ReaderParser struct {
 	state              ParserState
 	reader             *bufio.Reader
@@ -76,8 +61,8 @@ func (p *ReaderParser) Parse(ledgerFile string) error {
 		case AwaitingTransaction:
 			first := p.currentLine[0]
 			if isComment(first) {
-				comment, _ := p.parseComment()
-				fmt.Println("comment is:", comment)
+				// We can skip whole lines of comments
+				continue
 			} else if isNumeric(first) {
 				// We're expecting a transaction header here
 				p.parseTransactionHeader()
@@ -116,51 +101,9 @@ func (p *ReaderParser) ReadLine() bool {
 	}
 }
 
-func (p *ReaderParser) parseTransactionHeader() (time.Time, TransactionState, string, error) {
-	fmt.Println(">> parseTransactionHeader")
-
-	// Parse the date
-	date, err := p.parseDate()
-	if err != nil {
-		return time.Time{}, NoState, "", err
-	}
-
-	// Handle possible state
-	p.consumeWhitespace()
-	state := NoState
-	if isState(p.currentLine[0]) {
-		state = toState(p.currentLine[0])
-		p.advanceCaret(1)
-	}
-	p.consumeWhitespace()
-
-	return date, state, "", nil
-}
-
 func (p *ReaderParser) advanceCaret(n int) {
 	p.column += n
 	p.currentLine = p.currentLine[n:]
-}
-
-// Advances 10 runes to parse the date
-func (p *ReaderParser) parseDate() (time.Time, error) {
-	fmt.Println(">> parseDate")
-	runes := p.currentLine[:10]
-	date, err := time.Parse(DateFormat, string(runes))
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	p.advanceCaret(10)
-	return date, nil
-}
-
-// Attemps to parse a comment
-// Does not need to advance the caret because comments always end at line end
-func (p *ReaderParser) parseComment() (string, error) {
-	fmt.Println(">> parseComment")
-	comment := p.currentLine[1:]
-	return strings.TrimSpace(string(comment)), nil
 }
 
 // Consume whitespace
@@ -177,4 +120,87 @@ func (p *ReaderParser) consumeWhitespace() {
 			return
 		}
 	}
+}
+
+// Attemps to parse a comment
+// Does not need to advance the caret because comments always end at line end
+func (p *ReaderParser) parseComment() (string, error) {
+	fmt.Println(">> parseComment")
+	start := 0
+	if isComment(p.currentLine[0]) {
+		start = 1
+	}
+	comment := p.currentLine[start:]
+	return strings.TrimSpace(string(comment)), nil
+}
+
+func (p *ReaderParser) parseTransactionHeader() (time.Time, TransactionState, string, string, error) {
+	fmt.Println(">> parseTransactionHeader")
+
+	// Parse the date
+	date, err := p.parseDate()
+	if err != nil {
+		return time.Time{}, NoState, "", "", err
+	}
+
+	// Handle possible state
+	p.consumeWhitespace()
+	state := NoState
+	if isState(p.currentLine[0]) {
+		state = toState(p.currentLine[0])
+		p.advanceCaret(1)
+	}
+
+	// Handle payee
+	p.consumeWhitespace()
+	payee, err := p.parsePayee()
+	if err != nil {
+		return time.Time{}, NoState, "", "", err
+	}
+
+	// Handle trailing comment
+	comment := ""
+	if len(p.currentLine) > 0 {
+		p.consumeWhitespace()
+		c, err := p.parseComment()
+		comment = c
+		if err != nil {
+			return time.Time{}, NoState, "", "", err
+		}
+	}
+
+	return date, state, payee, comment, nil
+}
+
+// Advances 10 runes to parse the date
+func (p *ReaderParser) parseDate() (time.Time, error) {
+	fmt.Println(">> parseDate")
+	runes := p.currentLine[:10]
+	date, err := time.Parse(DateFormat, string(runes))
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	p.advanceCaret(10)
+	return date, nil
+}
+
+// Advances len(payee)
+func (p *ReaderParser) parsePayee() (string, error) {
+	fmt.Println(">> parsePayee")
+
+	n := 0
+	// We need to go up to the end of the line or the start of a comment
+	for _, r := range p.currentLine {
+		if isComment(r) {
+			break
+		} else {
+			n++
+		}
+	}
+
+	payee := p.currentLine[:n]
+	p.advanceCaret(n)
+
+	return strings.TrimSpace(string(payee)), nil
 }

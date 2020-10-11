@@ -16,6 +16,21 @@ const (
 	Stop
 )
 
+// Runes
+const (
+	zero           = rune('0')
+	nine           = rune('9')
+	tab            = rune('\t')
+	newline        = rune('\n')
+	carriageReturn = rune('\r')
+	space          = rune(' ')
+	semicolon      = rune(';')
+	exclamation    = rune('!')
+	star           = rune('*')
+	forwardSlash   = rune('/')
+	hash           = rune('#')
+)
+
 func isComment(r rune) bool {
 	return r == semicolon || r == hash
 }
