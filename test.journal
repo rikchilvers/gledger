@@ -12,5 +12,5 @@
     Expenses:Life:Dining    30
 
 2020-10-11 ! Clothes store  ; new shoes
-    Assets:Current 
+    Assets:Current ; don't need an amount here - elided
     Expenses:Life:Clothing    20.05

@@ -2,7 +2,7 @@ package main
 
 type Posting struct {
 	account  string
-	currency string
+	currency interface{}
 	amount   interface{}
 }
 

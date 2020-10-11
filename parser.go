@@ -60,36 +60,48 @@ func (p *Parser) Parse(ledgerFile string) error {
 			break
 		}
 
-		// Skip lines with no content
-		if len(p.currentLine) == 0 {
-			continue
-		}
-
 		// Process the line
 		switch p.state {
 		case AwaitingTransaction:
-			first := p.currentLine[0]
-			if isComment(first) {
-				// We can skip whole lines of comments
+			// We can skip commented lines and lines with no content
+			if len(p.currentLine) == 0 || isComment(p.currentLine[0]) {
 				continue
-			} else if isNumeric(first) {
+			} else if isNumeric(p.currentLine[0]) {
 				// We're expecting a transaction header here
 				p.currentTransaction = &Transaction{}
 				p.parseTransactionHeader()
 				fmt.Printf("%+v\n", p.currentTransaction)
 			} else {
+				fmt.Println(string(p.currentLine))
 				log.Fatalln("Unexpected character beginning line", p.line)
 			}
 
 			p.NextState()
 		case TransactionPosting:
-			if p.consumeWhitespace() < 2 {
-				log.Fatalln("not enough spaces before posting detail")
+			// Lines with no content are interpreted as closing the transaction
+			if len(p.currentLine) == 0 {
+				p.NextState()
+				continue
 			}
+
+			// Make sure the line starts with enough whitespace
+			if p.consumeWhitespace() < 2 {
+				log.Fatalln("not enough spaces before posting account/comment")
+			}
+
+			// At this point, we're expecting an account line or a comment
 			if isComment(p.currentLine[0]) {
 				p.parseComment()
 			} else {
 				p.parseAccount()
+				// Consumes preceding whitespace
+				p.parseCurrency()
+				// Consumes preceding whitespace
+				p.parseAmount()
+				if len(p.currentLine) > 0 {
+					p.consumeWhitespace()
+					p.parseComment()
+				}
 			}
 			// TODO add posting to transaction
 		case Stop:
@@ -277,6 +289,43 @@ func (p *Parser) parseAccount() (string, error) {
 		account = string(p.currentLine)
 	}
 
-	fmt.Println("account is", account)
+	p.advanceCaret(firstSpaceIndex + 1)
+
 	return account, nil
+}
+
+func (p *Parser) parseCurrency() (interface{}, error) {
+	fmt.Println(">> parseCurrency")
+
+	if len(p.currentLine) == 0 {
+		fmt.Println("\telided currency")
+		return nil, nil
+	}
+
+	if p.consumeWhitespace() < 2 && len(p.currentLine) > 0 {
+		log.Fatalln("not enough spaces before posting amount")
+	}
+
+	// TODO: actually read the currency
+
+	return nil, nil
+}
+
+func (p *Parser) parseAmount() (interface{}, error) {
+	fmt.Println(">> parseAmount")
+
+	if len(p.currentLine) == 0 {
+		fmt.Println("\telided amount")
+		return nil, nil
+	}
+
+	fmt.Println(string(p.currentLine))
+	if p.consumeWhitespace() < 2 && len(p.currentLine) > 0 {
+		fmt.Println(string(p.currentLine))
+		log.Fatalln("not enough spaces before posting amount on line", p.line)
+	}
+
+	// TODO: actually read the amount
+
+	return nil, nil
 }
