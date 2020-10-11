@@ -6,7 +6,7 @@ type Posting struct {
 	amount   interface{}
 }
 
-func newPosting(account, currency string, amount interface{}) Posting {
+func newPosting(account string, currency interface{}, amount interface{}) Posting {
 	return Posting{
 		account,
 		currency,
