@@ -1,6 +1,7 @@
 package main
 
 func main() {
-	parser := NewParser()
+	// parser := NewScannerParser()
+	parser := NewReaderParser()
 	parser.Parse("test.journal")
 }

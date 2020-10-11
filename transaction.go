@@ -5,9 +5,9 @@ import "time"
 type TransactionState int
 
 const (
-	Cleared TransactionState = iota
+	NoState TransactionState = iota
 	Uncleared
-	NoState
+	Cleared
 )
 
 type Transaction struct {

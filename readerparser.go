@@ -10,27 +10,18 @@ import (
 
 // Runes
 const (
-	zero         = rune('0')
-	nine         = rune('9')
-	tab          = rune('\t')
-	newline      = rune('\n')
-	space        = rune(' ')
-	semicolon    = rune(';')
-	forwardSlash = rune('/')
-	hash         = rune('#')
+	zero           = rune('0')
+	nine           = rune('9')
+	tab            = rune('\t')
+	newline        = rune('\n')
+	carriageReturn = rune('\r')
+	space          = rune(' ')
+	semicolon      = rune(';')
+	forwardSlash   = rune('/')
+	hash           = rune('#')
 )
 
-const DateFormat string = "2006-01-02"
-
-type ParserState int
-
-const (
-	AwaitingTransaction ParserState = iota
-	ExpectingDate
-	Stop
-)
-
-type Parser struct {
+type ReaderParser struct {
 	state              ParserState
 	reader             *bufio.Reader
 	line               int
@@ -39,8 +30,8 @@ type Parser struct {
 	transactions       []*Transaction
 }
 
-func NewParser() *Parser {
-	return &Parser{
+func NewReaderParser() *ReaderParser {
+	return &ReaderParser{
 		state:              AwaitingTransaction,
 		reader:             nil,
 		line:               0,
@@ -50,32 +41,27 @@ func NewParser() *Parser {
 	}
 }
 
-func (p *Parser) Parse(ledgerFile string) {
+func (p *ReaderParser) Parse(ledgerFile string) {
 	fmt.Println(">> parse", ledgerFile)
 	file, err := os.Open(ledgerFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer file.Close()
-
 	p.reader = bufio.NewReader(file)
-
-	// Consume whitespace
-	p.consumeWhitespace()
-
-	// Check for comments at the start of a line
-	r := p.peek(1)
-	fmt.Println(rune('\n'))
-	if beginComment(r) {
-		p.parseComment()
-	}
 
 	for {
 		switch p.state {
 		case AwaitingTransaction:
-			p.consumeWhitespace()
+			for {
+				if !p.consumeWhitespace() {
+					break
+				}
+			}
+			p.parseComment()
 			p.parseDate()
 		case Stop:
+			fmt.Println("Stopped")
 			break
 		default:
 			fmt.Println("default state")
@@ -83,7 +69,7 @@ func (p *Parser) Parse(ledgerFile string) {
 	}
 }
 
-func (p *Parser) peek(n int) rune {
+func (p *ReaderParser) peek(n int) rune {
 	fmt.Println(">> peek", n)
 	b, err := p.reader.Peek(n)
 	if err != nil {
@@ -93,14 +79,14 @@ func (p *Parser) peek(n int) rune {
 	return rune(b[0])
 }
 
-func (p *Parser) advance() rune {
+func (p *ReaderParser) advance() rune {
 	r, _, err := p.reader.ReadRune()
 	if err != nil {
 		fmt.Println("\nError reading file:", err)
 		p.state = Stop
 	}
 
-	if r == newline {
+	if r == newline || r == carriageReturn {
 		p.line++
 		p.column = 0
 	} else {
@@ -113,7 +99,7 @@ func (p *Parser) advance() rune {
 }
 
 // Advances 10 runes to parse the date
-func (p *Parser) parseDate() {
+func (p *ReaderParser) parseDate() {
 	fmt.Println(">> parseDate")
 	runes := []rune{}
 	for i := 0; i < 10; i++ {
@@ -131,25 +117,43 @@ func beginComment(r rune) bool {
 	return r == semicolon || r == hash
 }
 
-func (p *Parser) consumeWhitespace() {
+func isNewline(r rune) bool {
+	return r == newline || r == carriageReturn
+}
+
+// Consumes all whitespace until a newline or non-whitespace
+// Consumes newlines before returning
+// Returns a hint as to whether the nonwhitespace character is a newline or not
+func (p *ReaderParser) consumeWhitespace() bool {
 	fmt.Println(">> consumeWhitespace")
 	next := p.advance()
 	for {
-		if next == space || next == tab || next == newline {
+		if next == space || next == tab {
 			next = p.advance()
+		} else if next == newline || next == carriageReturn {
+			return true
 		} else {
 			p.reader.UnreadRune()
-			break
+			return false
 		}
 	}
 }
 
-func (p *Parser) parseComment() {
+// Attemps to parse a comment
+func (p *ReaderParser) parseComment() {
 	fmt.Println(">> parseComment")
+	// Collect the comment here
 	runes := []rune{}
+
+	next := p.advance()
+	if !beginComment(next) {
+		p.reader.UnreadRune()
+		return
+	}
+
+	// Read until a new line
 	for {
-		r := p.advance()
-		if r == newline {
+		if isNewline(next) {
 			break
 		}
 		runes = append(runes, r)
