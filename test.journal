@@ -1,0 +1,8 @@
+ ; This is a comment
+2020-10-10 * Grocery store  ; Weekly shop
+    Assets:Cash 
+    Expenses:Immediate Obligations:Groceries    £42.81
+
+2020-10-11 ! Clothes store  ; new shoes
+    Assets:Current 
+    Expenses:Life:Clothing    20.05
