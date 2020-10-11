@@ -27,6 +27,7 @@ const (
 	newline        = rune('\n')
 	carriageReturn = rune('\r')
 	space          = rune(' ')
+	period         = rune('.')
 	semicolon      = rune(';')
 	exclamation    = rune('!')
 	star           = rune('*')

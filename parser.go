@@ -320,8 +320,7 @@ func (p *Parser) parseAccount() (string, error) {
 func (p *Parser) parseCurrency() (interface{}, error) {
 	fmt.Println(">> parseCurrency on line:", p.line)
 
-	fmt.Println("\t", string(p.currentLine))
-
+	// The currency might be elided
 	if isNumeric(p.currentLine[0]) {
 		return nil, nil
 	}
@@ -344,9 +343,20 @@ func (p *Parser) parseCurrency() (interface{}, error) {
 func (p *Parser) parseAmount() (interface{}, error) {
 	fmt.Println(">> parseAmount on line:", p.line)
 
-	fmt.Println("\t", string(p.currentLine))
+	n := -1
+	for i, r := range p.currentLine {
+		if !(isNumeric(r) || r == period) {
+			n = i
+			break
+		}
+	}
+	if n == -1 {
+		n = len(p.currentLine)
+	}
 
-	// TODO: actually read the amount
+	amount := p.currentLine[:n]
+	fmt.Println("\tamount is", string(amount))
+	p.advanceCaret(n)
 
-	return nil, nil
+	return amount, nil
 }
