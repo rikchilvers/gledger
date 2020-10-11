@@ -27,3 +27,18 @@ func isNumeric(r rune) bool {
 func isNewline(r rune) bool {
 	return r == newline || r == carriageReturn
 }
+
+func isState(r rune) bool {
+	return r == exclamation || r == star
+}
+
+func toState(r rune) TransactionState {
+	switch r {
+	case exclamation:
+		return Uncleared
+	case star:
+		return Cleared
+	default:
+		return NoState
+	}
+}

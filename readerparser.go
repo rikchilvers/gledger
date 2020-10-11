@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -17,6 +18,8 @@ const (
 	carriageReturn = rune('\r')
 	space          = rune(' ')
 	semicolon      = rune(';')
+	exclamation    = rune('!')
+	star           = rune('*')
 	forwardSlash   = rune('/')
 	hash           = rune('#')
 )
@@ -73,8 +76,10 @@ func (p *ReaderParser) Parse(ledgerFile string) error {
 		case AwaitingTransaction:
 			first := p.currentLine[0]
 			if isComment(first) {
-				fmt.Println("comment is:", string(p.currentLine))
+				comment, _ := p.parseComment()
+				fmt.Println("comment is:", comment)
 			} else if isNumeric(first) {
+				// We're expecting a transaction header here
 				p.parseTransactionHeader()
 			} else {
 				log.Fatalln("Unexpected character beginning line", p.line)
@@ -112,13 +117,24 @@ func (p *ReaderParser) ReadLine() bool {
 }
 
 func (p *ReaderParser) parseTransactionHeader() (time.Time, TransactionState, string, error) {
+	fmt.Println(">> parseTransactionHeader")
+
 	// Parse the date
 	date, err := p.parseDate()
 	if err != nil {
 		return time.Time{}, NoState, "", err
 	}
 
-	return date, NoState, "", nil
+	// Handle possible state
+	p.consumeWhitespace()
+	state := NoState
+	if isState(p.currentLine[0]) {
+		state = toState(p.currentLine[0])
+		p.advanceCaret(1)
+	}
+	p.consumeWhitespace()
+
+	return date, state, "", nil
 }
 
 func (p *ReaderParser) advanceCaret(n int) {
@@ -139,44 +155,26 @@ func (p *ReaderParser) parseDate() (time.Time, error) {
 	return date, nil
 }
 
-// Consumes all whitespace until a newline or non-whitespace
-// Consumes newlines before returning
-// Returns a hint as to whether the nonwhitespace character is a newline or not
-// func (p *ReaderParser) consumeWhitespace() bool {
-// 	fmt.Println(">> consumeWhitespace")
-// 	next := p.advance()
-// 	for {
-// 		if next == space || next == tab {
-// 			next = p.advance()
-// 		} else if next == newline || next == carriageReturn {
-// 			return true
-// 		} else {
-// 			p.reader.UnreadRune()
-// 			return false
-// 		}
-// 	}
-// }
-
 // Attemps to parse a comment
-// func (p *ReaderParser) parseComment() {
-// 	fmt.Println(">> parseComment")
-// 	// Collect the comment here
-// 	runes := []rune{}
+// Does not need to advance the caret because comments always end at line end
+func (p *ReaderParser) parseComment() (string, error) {
+	fmt.Println(">> parseComment")
+	comment := p.currentLine[1:]
+	return strings.TrimSpace(string(comment)), nil
+}
 
-// 	next := p.advance()
-// 	if !isComment(next) {
-// 		p.reader.UnreadRune()
-// 		return
-// 	}
-
-// 	// Read until a new line
-// 	for {
-// 		if isNewline(next) {
-// 			break
-// 		}
-// 		// runes = append(runes, r)
-// 	}
-
-// 	comment := string(runes)
-// 	fmt.Println("The comment is:", comment)
-// }
+// Consume whitespace
+// Advances the caret len(whitespace) places
+func (p *ReaderParser) consumeWhitespace() {
+	fmt.Println(">> consumeWhitespace")
+	n := 0
+	for {
+		r := p.currentLine[n]
+		if r == space || r == tab {
+			n++
+		} else {
+			p.advanceCaret(n)
+			return
+		}
+	}
+}
