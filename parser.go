@@ -36,7 +36,7 @@ type Parser struct {
 	line               int
 	column             int
 	currentTransaction *Transaction
-	transactions       []Transaction
+	transactions       []*Transaction
 }
 
 func NewParser() *Parser {
@@ -46,7 +46,7 @@ func NewParser() *Parser {
 		line:               0,
 		column:             0,
 		currentTransaction: nil,
-		transactions:       []Transaction{},
+		transactions:       []*Transaction{},
 	}
 }
 
@@ -73,6 +73,7 @@ func (p *Parser) Parse(ledgerFile string) {
 	for {
 		switch p.state {
 		case AwaitingTransaction:
+			p.consumeWhitespace()
 			p.parseDate()
 		case Stop:
 			break
@@ -131,11 +132,13 @@ func beginComment(r rune) bool {
 }
 
 func (p *Parser) consumeWhitespace() {
+	fmt.Println(">> consumeWhitespace")
+	next := p.advance()
 	for {
-		next := p.peek(1)
 		if next == space || next == tab || next == newline {
-			p.advance()
+			next = p.advance()
 		} else {
+			p.reader.UnreadRune()
 			break
 		}
 	}
