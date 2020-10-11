@@ -1,6 +1,9 @@
 package main
 
-import "time"
+import (
+	"log"
+	"time"
+)
 
 type TransactionState int
 
@@ -11,26 +14,37 @@ const (
 )
 
 type Transaction struct {
-	date     time.Time
-	state    TransactionState
-	payee    string
-	postings []Posting
+	date                      time.Time
+	state                     TransactionState
+	payee                     string
+	postingsWithElidedAmounts int
+	postings                  []Posting
 }
 
 func newTransaction() Transaction {
 	return Transaction{}
 }
 
-type Posting struct {
-	account  string
-	currency string
-	amount   float32
+func (t *Transaction) addPosting(p Posting) error {
+	if _, ok := p.amount.(float32); ok {
+		t.postingsWithElidedAmounts++
+		if t.postingsWithElidedAmounts > 1 {
+			log.Fatalln("Cannot have more than one posting with an elided amount")
+		}
+	}
+	t.postings = append(t.postings, p)
+
+	return nil
 }
 
-func newPosting(account, currency string, amount float32) Posting {
-	return Posting{
-		account,
-		currency,
-		amount,
+func (t *Transaction) close() error {
+	sum := float32(0)
+	for _, p := range t.postings {
+		if amount, ok := p.amount.(float32); ok {
+			sum += amount
+		} else {
+			continue
+		}
 	}
+	return nil
 }

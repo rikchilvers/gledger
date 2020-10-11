@@ -37,6 +37,8 @@ func (p *Parser) NextState() {
 		p.state = TransactionPosting
 	case TransactionPosting:
 		p.state = AwaitingTransaction
+		// TODO: close transaction
+		// TODO: add transaction to ledger
 	default:
 		return
 	}
