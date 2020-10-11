@@ -65,7 +65,9 @@ func (p *ReaderParser) Parse(ledgerFile string) error {
 				continue
 			} else if isNumeric(first) {
 				// We're expecting a transaction header here
+				p.currentTransaction = &Transaction{}
 				p.parseTransactionHeader()
+				fmt.Printf("%+v\n", p.currentTransaction)
 			} else {
 				log.Fatalln("Unexpected character beginning line", p.line)
 			}
@@ -134,14 +136,15 @@ func (p *ReaderParser) parseComment() (string, error) {
 	return strings.TrimSpace(string(comment)), nil
 }
 
-func (p *ReaderParser) parseTransactionHeader() (time.Time, TransactionState, string, string, error) {
+func (p *ReaderParser) parseTransactionHeader() error {
 	fmt.Println(">> parseTransactionHeader")
 
 	// Parse the date
 	date, err := p.parseDate()
 	if err != nil {
-		return time.Time{}, NoState, "", "", err
+		return err
 	}
+	p.currentTransaction.date = date
 
 	// Handle possible state
 	p.consumeWhitespace()
@@ -150,26 +153,28 @@ func (p *ReaderParser) parseTransactionHeader() (time.Time, TransactionState, st
 		state = toState(p.currentLine[0])
 		p.advanceCaret(1)
 	}
+	p.currentTransaction.state = state
 
 	// Handle payee
 	p.consumeWhitespace()
 	payee, err := p.parsePayee()
 	if err != nil {
-		return time.Time{}, NoState, "", "", err
+		return err
 	}
+	p.currentTransaction.payee = payee
 
 	// Handle trailing comment
-	comment := ""
-	if len(p.currentLine) > 0 {
-		p.consumeWhitespace()
-		c, err := p.parseComment()
-		comment = c
-		if err != nil {
-			return time.Time{}, NoState, "", "", err
-		}
-	}
+	// comment := ""
+	// if len(p.currentLine) > 0 {
+	// 	p.consumeWhitespace()
+	// 	c, err := p.parseComment()
+	// 	comment = c
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
-	return date, state, payee, comment, nil
+	return nil
 }
 
 // Advances 10 runes to parse the date
