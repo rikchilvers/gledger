@@ -43,7 +43,11 @@ func NewReaderParser() *ReaderParser {
 	}
 }
 
-func (p *ReaderParser) Parse(ledgerFile string) {
+func (p *ReaderParser) NextState() {
+
+}
+
+func (p *ReaderParser) Parse(ledgerFile string) error {
 	fmt.Println(">> parse", ledgerFile)
 	file, err := os.Open(ledgerFile)
 	if err != nil {
@@ -71,9 +75,9 @@ func (p *ReaderParser) Parse(ledgerFile string) {
 			if isComment(first) {
 				fmt.Println("comment is:", string(p.currentLine))
 			} else if isNumeric(first) {
-				p.parseDate()
+				p.parseTransactionHeader()
 			} else {
-				log.Fatalln("Unexpected character beginning line", p.currentLine)
+				log.Fatalln("Unexpected character beginning line", p.line)
 			}
 		default:
 			fmt.Println("default state")
@@ -81,7 +85,7 @@ func (p *ReaderParser) Parse(ledgerFile string) {
 
 		// Handle Reader errors here
 	}
-
+	return nil
 }
 
 // Reads until the end of a line
@@ -99,6 +103,7 @@ func (p *ReaderParser) ReadLine() bool {
 
 		if r == newline || r == carriageReturn {
 			p.line++
+			p.column = 1
 			return true
 		} else {
 			p.currentLine = append(p.currentLine, r)
@@ -106,85 +111,72 @@ func (p *ReaderParser) ReadLine() bool {
 	}
 }
 
-func (p *ReaderParser) peek(n int) rune {
-	fmt.Println(">> peek", n)
-	b, err := p.reader.Peek(n)
+func (p *ReaderParser) parseTransactionHeader() (time.Time, TransactionState, string, error) {
+	// Parse the date
+	date, err := p.parseDate()
 	if err != nil {
-		fmt.Println("\nError reading file:", err)
-		p.state = Stop
+		return time.Time{}, NoState, "", err
 	}
-	return rune(b[0])
+
+	return date, NoState, "", nil
 }
 
-func (p *ReaderParser) advance() rune {
-	r, _, err := p.reader.ReadRune()
-	if err != nil {
-		fmt.Println("\nError reading file:", err)
-		p.state = Stop
-	}
-
-	if r == newline || r == carriageReturn {
-		p.line++
-	}
-
-	fmt.Printf(">> advanced to ln %d, col %d\n", p.line, p.column)
-
-	return r
+func (p *ReaderParser) advanceCaret(n int) {
+	p.column += n
+	p.currentLine = p.currentLine[n:]
 }
 
 // Advances 10 runes to parse the date
-func (p *ReaderParser) parseDate() {
+func (p *ReaderParser) parseDate() (time.Time, error) {
 	fmt.Println(">> parseDate")
-	runes := []rune{}
-	for i := 0; i < 10; i++ {
-		runes = append(runes, p.advance())
-	}
+	runes := p.currentLine[:10]
 	date, err := time.Parse(DateFormat, string(runes))
 	if err != nil {
-		log.Fatal("Failed to parse date")
+		return time.Time{}, err
 	}
 
-	fmt.Println("The date is:", date)
+	p.advanceCaret(10)
+	return date, nil
 }
 
 // Consumes all whitespace until a newline or non-whitespace
 // Consumes newlines before returning
 // Returns a hint as to whether the nonwhitespace character is a newline or not
-func (p *ReaderParser) consumeWhitespace() bool {
-	fmt.Println(">> consumeWhitespace")
-	next := p.advance()
-	for {
-		if next == space || next == tab {
-			next = p.advance()
-		} else if next == newline || next == carriageReturn {
-			return true
-		} else {
-			p.reader.UnreadRune()
-			return false
-		}
-	}
-}
+// func (p *ReaderParser) consumeWhitespace() bool {
+// 	fmt.Println(">> consumeWhitespace")
+// 	next := p.advance()
+// 	for {
+// 		if next == space || next == tab {
+// 			next = p.advance()
+// 		} else if next == newline || next == carriageReturn {
+// 			return true
+// 		} else {
+// 			p.reader.UnreadRune()
+// 			return false
+// 		}
+// 	}
+// }
 
 // Attemps to parse a comment
-func (p *ReaderParser) parseComment() {
-	fmt.Println(">> parseComment")
-	// Collect the comment here
-	runes := []rune{}
+// func (p *ReaderParser) parseComment() {
+// 	fmt.Println(">> parseComment")
+// 	// Collect the comment here
+// 	runes := []rune{}
 
-	next := p.advance()
-	if !isComment(next) {
-		p.reader.UnreadRune()
-		return
-	}
+// 	next := p.advance()
+// 	if !isComment(next) {
+// 		p.reader.UnreadRune()
+// 		return
+// 	}
 
-	// Read until a new line
-	for {
-		if isNewline(next) {
-			break
-		}
-		// runes = append(runes, r)
-	}
+// 	// Read until a new line
+// 	for {
+// 		if isNewline(next) {
+// 			break
+// 		}
+// 		// runes = append(runes, r)
+// 	}
 
-	comment := string(runes)
-	fmt.Println("The comment is:", comment)
-}
+// 	comment := string(runes)
+// 	fmt.Println("The comment is:", comment)
+// }

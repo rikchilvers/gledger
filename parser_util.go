@@ -12,6 +12,7 @@ type ParserState int
 const (
 	// Whitespace, comment or date
 	AwaitingTransaction ParserState = iota
+	TransactionPosting
 	Stop
 )
 
