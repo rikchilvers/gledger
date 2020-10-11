@@ -6,6 +6,9 @@ const DateFormat string = "2006-01-02"
 // Max line length in runes
 const MaxLineLength int = 255
 
+// Number of spaces a tab equates to
+const SpacesPerTab int = 2
+
 type ParserState int
 
 // The state of the parser (normally, what it is expecting next)

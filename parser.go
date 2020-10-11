@@ -32,7 +32,14 @@ func NewParser() *Parser {
 }
 
 func (p *Parser) NextState() {
-
+	switch p.state {
+	case AwaitingTransaction:
+		p.state = TransactionPosting
+	case TransactionPosting:
+		p.state = AwaitingTransaction
+	default:
+		return
+	}
 }
 
 func (p *Parser) Parse(ledgerFile string) error {
@@ -71,6 +78,20 @@ func (p *Parser) Parse(ledgerFile string) error {
 			} else {
 				log.Fatalln("Unexpected character beginning line", p.line)
 			}
+
+			p.NextState()
+		case TransactionPosting:
+			if p.consumeWhitespace() < 2 {
+				log.Fatalln("not enough spaces before posting detail")
+			}
+			if isComment(p.currentLine[0]) {
+				p.parseComment()
+			} else {
+				p.parseAccount()
+			}
+			// TODO add posting to transaction
+		case Stop:
+			return nil
 		default:
 			fmt.Println("default state")
 		}
@@ -81,6 +102,7 @@ func (p *Parser) Parse(ledgerFile string) error {
 }
 
 // Reads until the end of a line
+//
 // Returns a hint as to whether there are more lines to read
 func (p *Parser) ReadLine() bool {
 	// fmt.Println(">> ReadLine")
@@ -109,17 +131,23 @@ func (p *Parser) advanceCaret(n int) {
 }
 
 // Consume whitespace
-// Advances the caret len(whitespace) places
-func (p *Parser) consumeWhitespace() {
+//
+// Advances the caret len(whitespace) places and returns this count
+func (p *Parser) consumeWhitespace() int {
 	fmt.Println(">> consumeWhitespace")
 	n := 0
+	spaces := 0
 	for {
 		r := p.currentLine[n]
-		if r == space || r == tab {
+		if r == space {
 			n++
+			spaces += 1
+		} else if r == tab {
+			n++
+			spaces += SpacesPerTab
 		} else {
 			p.advanceCaret(n)
-			return
+			return spaces
 		}
 	}
 }
@@ -208,4 +236,45 @@ func (p *Parser) parsePayee() (string, error) {
 	p.advanceCaret(n)
 
 	return strings.TrimSpace(string(payee)), nil
+}
+
+// Parses an account
+func (p *Parser) parseAccount() (string, error) {
+	fmt.Println(">> parseAccount")
+
+	// Search for index of >= 2 spaces
+	spaces := 0
+	firstSpaceIndex := -1
+	for i, r := range p.currentLine {
+		switch r {
+		case space:
+			if spaces == 0 {
+				firstSpaceIndex = i
+			}
+			spaces += 1
+		case tab:
+			if spaces == 0 {
+				firstSpaceIndex = i
+			}
+			spaces += SpacesPerTab
+		default:
+			spaces = 0
+			firstSpaceIndex = -1
+		}
+
+		if spaces > 1 {
+			break
+		}
+	}
+
+	// Take up to the end of the account
+	account := ""
+	if firstSpaceIndex != -1 {
+		account = string(p.currentLine[:firstSpaceIndex])
+	} else {
+		account = string(p.currentLine)
+	}
+
+	fmt.Println("account is", account)
+	return account, nil
 }
