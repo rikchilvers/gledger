@@ -26,6 +26,7 @@ type ReaderParser struct {
 	reader             *bufio.Reader
 	line               int
 	column             int
+	currentLine        []rune
 	currentTransaction *Transaction
 	transactions       []*Transaction
 }
@@ -34,8 +35,9 @@ func NewReaderParser() *ReaderParser {
 	return &ReaderParser{
 		state:              AwaitingTransaction,
 		reader:             nil,
-		line:               0,
-		column:             0,
+		line:               1,
+		column:             1,
+		currentLine:        make([]rune, MaxLineLength),
 		currentTransaction: nil,
 		transactions:       []*Transaction{},
 	}
@@ -51,20 +53,55 @@ func (p *ReaderParser) Parse(ledgerFile string) {
 	p.reader = bufio.NewReader(file)
 
 	for {
+		// Read a line - break if we can't read anymore
+		if !p.ReadLine() {
+			fmt.Printf("there are %d lines in the file\n", p.line)
+			break
+		}
+
+		// Skip lines with no content
+		if len(p.currentLine) == 0 {
+			continue
+		}
+
+		// Process the line
 		switch p.state {
 		case AwaitingTransaction:
-			for {
-				if !p.consumeWhitespace() {
-					break
-				}
+			first := p.currentLine[0]
+			if isComment(first) {
+				fmt.Println("comment is:", string(p.currentLine))
+			} else if isNumeric(first) {
+				p.parseDate()
+			} else {
+				log.Fatalln("Unexpected character beginning line", p.currentLine)
 			}
-			p.parseComment()
-			p.parseDate()
-		case Stop:
-			fmt.Println("Stopped")
-			break
 		default:
 			fmt.Println("default state")
+		}
+
+		// Handle Reader errors here
+	}
+
+}
+
+// Reads until the end of a line
+// Returns a hint as to whether there are more lines to read
+func (p *ReaderParser) ReadLine() bool {
+	// fmt.Println(">> ReadLine")
+	// Reset the line
+	p.currentLine = nil
+	for {
+		r, _, err := p.reader.ReadRune()
+		if err != nil {
+			fmt.Println("!! Error reading file:", err)
+			return false
+		}
+
+		if r == newline || r == carriageReturn {
+			p.line++
+			return true
+		} else {
+			p.currentLine = append(p.currentLine, r)
 		}
 	}
 }
@@ -88,9 +125,6 @@ func (p *ReaderParser) advance() rune {
 
 	if r == newline || r == carriageReturn {
 		p.line++
-		p.column = 0
-	} else {
-		p.column++
 	}
 
 	fmt.Printf(">> advanced to ln %d, col %d\n", p.line, p.column)
@@ -111,14 +145,6 @@ func (p *ReaderParser) parseDate() {
 	}
 
 	fmt.Println("The date is:", date)
-}
-
-func beginComment(r rune) bool {
-	return r == semicolon || r == hash
-}
-
-func isNewline(r rune) bool {
-	return r == newline || r == carriageReturn
 }
 
 // Consumes all whitespace until a newline or non-whitespace
@@ -146,7 +172,7 @@ func (p *ReaderParser) parseComment() {
 	runes := []rune{}
 
 	next := p.advance()
-	if !beginComment(next) {
+	if !isComment(next) {
 		p.reader.UnreadRune()
 		return
 	}
@@ -156,7 +182,7 @@ func (p *ReaderParser) parseComment() {
 		if isNewline(next) {
 			break
 		}
-		runes = append(runes, r)
+		// runes = append(runes, r)
 	}
 
 	comment := string(runes)
