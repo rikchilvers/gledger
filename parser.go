@@ -322,9 +322,23 @@ func (p *Parser) parseCurrency() (interface{}, error) {
 
 	fmt.Println("\t", string(p.currentLine))
 
-	// TODO: actually read the currency
+	if isNumeric(p.currentLine[0]) {
+		return nil, nil
+	}
 
-	return nil, nil
+	n := 0
+	for i, r := range p.currentLine {
+		if isNumeric(r) {
+			n = i
+			break
+		}
+	}
+
+	currency := p.currentLine[:n]
+	fmt.Println("\tcurrency is", string(currency))
+	p.advanceCaret(n)
+
+	return currency, nil
 }
 
 func (p *Parser) parseAmount() (interface{}, error) {
