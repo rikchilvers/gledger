@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type ReaderParser struct {
+type Parser struct {
 	state              ParserState
 	reader             *bufio.Reader
 	line               int
@@ -19,8 +19,8 @@ type ReaderParser struct {
 	transactions       []*Transaction
 }
 
-func NewReaderParser() *ReaderParser {
-	return &ReaderParser{
+func NewParser() *Parser {
+	return &Parser{
 		state:              AwaitingTransaction,
 		reader:             nil,
 		line:               1,
@@ -31,11 +31,11 @@ func NewReaderParser() *ReaderParser {
 	}
 }
 
-func (p *ReaderParser) NextState() {
+func (p *Parser) NextState() {
 
 }
 
-func (p *ReaderParser) Parse(ledgerFile string) error {
+func (p *Parser) Parse(ledgerFile string) error {
 	fmt.Println(">> parse", ledgerFile)
 	file, err := os.Open(ledgerFile)
 	if err != nil {
@@ -82,7 +82,7 @@ func (p *ReaderParser) Parse(ledgerFile string) error {
 
 // Reads until the end of a line
 // Returns a hint as to whether there are more lines to read
-func (p *ReaderParser) ReadLine() bool {
+func (p *Parser) ReadLine() bool {
 	// fmt.Println(">> ReadLine")
 	// Reset the line
 	p.currentLine = nil
@@ -103,14 +103,14 @@ func (p *ReaderParser) ReadLine() bool {
 	}
 }
 
-func (p *ReaderParser) advanceCaret(n int) {
+func (p *Parser) advanceCaret(n int) {
 	p.column += n
 	p.currentLine = p.currentLine[n:]
 }
 
 // Consume whitespace
 // Advances the caret len(whitespace) places
-func (p *ReaderParser) consumeWhitespace() {
+func (p *Parser) consumeWhitespace() {
 	fmt.Println(">> consumeWhitespace")
 	n := 0
 	for {
@@ -126,7 +126,7 @@ func (p *ReaderParser) consumeWhitespace() {
 
 // Attemps to parse a comment
 // Does not need to advance the caret because comments always end at line end
-func (p *ReaderParser) parseComment() (string, error) {
+func (p *Parser) parseComment() (string, error) {
 	fmt.Println(">> parseComment")
 	start := 0
 	if isComment(p.currentLine[0]) {
@@ -136,7 +136,7 @@ func (p *ReaderParser) parseComment() (string, error) {
 	return strings.TrimSpace(string(comment)), nil
 }
 
-func (p *ReaderParser) parseTransactionHeader() error {
+func (p *Parser) parseTransactionHeader() error {
 	fmt.Println(">> parseTransactionHeader")
 
 	// Parse the date
@@ -178,7 +178,7 @@ func (p *ReaderParser) parseTransactionHeader() error {
 }
 
 // Advances 10 runes to parse the date
-func (p *ReaderParser) parseDate() (time.Time, error) {
+func (p *Parser) parseDate() (time.Time, error) {
 	fmt.Println(">> parseDate")
 	runes := p.currentLine[:10]
 	date, err := time.Parse(DateFormat, string(runes))
@@ -191,7 +191,7 @@ func (p *ReaderParser) parseDate() (time.Time, error) {
 }
 
 // Advances len(payee)
-func (p *ReaderParser) parsePayee() (string, error) {
+func (p *Parser) parsePayee() (string, error) {
 	fmt.Println(">> parsePayee")
 
 	n := 0
