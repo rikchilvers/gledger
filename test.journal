@@ -1,4 +1,4 @@
-
+; Test ledger file
 
 ; This is a comment
 ; This is another comment
@@ -11,7 +11,6 @@
     ; a comment in the restaurant posting
     Assets:Current 
     Expenses:Life:Dining    30
-
 2020-10-11 ! Clothes store  ; new shoes
-    Assets:Current ; don't need an amount here - elided
+    Assets:Current
     Expenses:Life:Clothing    20.05

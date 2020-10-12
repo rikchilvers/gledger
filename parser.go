@@ -25,7 +25,7 @@ func NewParser() *Parser {
 	return &Parser{
 		state:              AwaitingTransaction,
 		reader:             nil,
-		line:               1,
+		line:               0, // has to be zero because of how ReadLine works
 		column:             1,
 		currentLine:        make([]rune, MaxLineLength),
 		currentTransaction: nil,
@@ -35,16 +35,20 @@ func NewParser() *Parser {
 }
 
 func (p *Parser) NextState() {
+	fmt.Print("^^ Advancing state on line ", p.line, p.state)
 	switch p.state {
 	case AwaitingTransaction:
 		p.state = InTransaction
 	case InTransaction:
-		p.state = AwaitingTransaction
+		p.state = BetweenTransactions
 		// TODO: close transaction
 		// TODO: add transaction to ledger
+	case BetweenTransactions:
+		p.state = AwaitingTransaction
 	default:
 		return
 	}
+	fmt.Print(">", p.state, "\n")
 }
 
 func (p *Parser) Parse(ledgerFile string) error {
@@ -67,7 +71,11 @@ func (p *Parser) Parse(ledgerFile string) error {
 		switch p.state {
 		case AwaitingTransaction:
 			// We can skip commented lines and lines with no content
-			if len(p.currentLine) == 0 || isComment(p.currentLine[0]) {
+			if len(p.currentLine) == 0 {
+				fmt.Println("|| Skipping empty line", p.line)
+				continue
+			} else if isComment(p.currentLine[0]) {
+				fmt.Println("|| Skipping comment line", p.line)
 				continue
 			} else if isNumeric(p.currentLine[0]) {
 				// We're expecting a transaction header here
@@ -107,6 +115,13 @@ func (p *Parser) Parse(ledgerFile string) error {
 				p.parsePosting()
 			}
 			// TODO add posting to transaction
+		case BetweenTransactions:
+			fmt.Println("BetweenTransactions", len(p.currentLine))
+			if len(p.currentLine) == 0 {
+				p.NextState()
+			} else {
+				log.Fatalln("No linebreaks between transactions on line:", p.line)
+			}
 		case Stop:
 			return nil
 		default:
@@ -122,7 +137,7 @@ func (p *Parser) Parse(ledgerFile string) error {
 //
 // Returns a hint as to whether there are more lines to read
 func (p *Parser) ReadLine() bool {
-	// fmt.Println(">> ReadLine")
+	fmt.Println(">> ReadLine", p.line+1)
 	// Reset the line
 	p.currentLine = nil
 	for {
@@ -247,13 +262,6 @@ func (p *Parser) parsePosting() error {
 	p.currentPosting.currency = currency
 	p.currentPosting.amount = amount
 	p.currentTransaction.addPosting(*p.currentPosting)
-
-	// There could be a comment at the end of the line
-	// NB: End of line comments are discarded from postings
-	if len(p.currentLine) > 0 {
-		p.consumeWhitespace()
-		p.parseComment()
-	}
 
 	return nil
 }

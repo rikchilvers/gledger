@@ -16,6 +16,7 @@ const (
 	// Whitespace, comment or date
 	AwaitingTransaction ParserState = iota
 	InTransaction
+	BetweenTransactions
 	Stop
 )
 
