@@ -35,20 +35,16 @@ func NewParser() *Parser {
 }
 
 func (p *Parser) NextState() {
-	fmt.Print("^^ Advancing state on line ", p.line, p.state)
 	switch p.state {
 	case AwaitingTransaction:
 		p.state = InTransaction
 	case InTransaction:
-		p.state = BetweenTransactions
+		p.state = AwaitingTransaction
 		// TODO: close transaction
 		// TODO: add transaction to ledger
-	case BetweenTransactions:
-		p.state = AwaitingTransaction
 	default:
 		return
 	}
-	fmt.Print(">", p.state, "\n")
 }
 
 func (p *Parser) Parse(ledgerFile string) error {
@@ -72,10 +68,10 @@ func (p *Parser) Parse(ledgerFile string) error {
 		case AwaitingTransaction:
 			// We can skip commented lines and lines with no content
 			if len(p.currentLine) == 0 {
-				fmt.Println("|| Skipping empty line", p.line)
+				fmt.Println(".. Skipping empty line", p.line)
 				continue
 			} else if isComment(p.currentLine[0]) {
-				fmt.Println("|| Skipping comment line", p.line)
+				fmt.Println(".. Skipping comment line", p.line)
 				continue
 			} else if isNumeric(p.currentLine[0]) {
 				// We're expecting a transaction header here
@@ -87,15 +83,16 @@ func (p *Parser) Parse(ledgerFile string) error {
 
 			p.NextState()
 		case InTransaction:
-			// Lines with no content are interpreted as closing the transaction
+			// Lines with no content close the transaction
 			if len(p.currentLine) == 0 {
 				p.NextState()
 				continue
 			}
 
-			// Make sure the line starts with enough whitespace
+			// Lines without enough whitespace close the transaction
 			if p.consumeWhitespace() < 2 {
-				log.Fatalln("not enough spaces before posting account/comment")
+				p.NextState()
+				continue
 			}
 
 			if p.currentPosting == nil {
@@ -113,14 +110,6 @@ func (p *Parser) Parse(ledgerFile string) error {
 				}
 			} else {
 				p.parsePosting()
-			}
-			// TODO add posting to transaction
-		case BetweenTransactions:
-			fmt.Println("BetweenTransactions", len(p.currentLine))
-			if len(p.currentLine) == 0 {
-				p.NextState()
-			} else {
-				log.Fatalln("No linebreaks between transactions on line:", p.line)
 			}
 		case Stop:
 			return nil
@@ -245,8 +234,9 @@ func (p *Parser) parsePosting() error {
 		return err
 	}
 
-	if len(p.currentLine) == 0 {
-		fmt.Println("\telided amount")
+	// Check if more than 2 runes remain on the line
+	fmt.Println("line has chars remaining:", len(p.currentLine))
+	if len(p.currentLine) < 2 {
 		return nil
 	}
 
@@ -328,15 +318,19 @@ func (p *Parser) parseAccount() (string, error) {
 		}
 	}
 
-	// Take up to the end of the account
+	// Take up to the end of the line or the account (if it is followed by > 2 spaces)
 	account := ""
-	if firstSpaceIndex != -1 {
+	if spaces >= 2 {
+		// if we have >=2 spaces, we can take up to the first space index
 		account = string(p.currentLine[:firstSpaceIndex])
+		// advance to the first space
+		p.advanceCaret(firstSpaceIndex + 1)
 	} else {
-		account = string(p.currentLine)
+		// otherwise, we just take the whole line
+		account = strings.TrimSpace(string(p.currentLine))
+		// advance to the end of the line
+		p.currentLine = p.currentLine[:0]
 	}
-
-	p.advanceCaret(firstSpaceIndex + 1)
 
 	return account, nil
 }
@@ -358,7 +352,6 @@ func (p *Parser) parseCurrency() (interface{}, error) {
 	}
 
 	currency := p.currentLine[:n]
-	fmt.Println("\tcurrency is", string(currency))
 	p.advanceCaret(n)
 
 	return currency, nil
@@ -379,7 +372,6 @@ func (p *Parser) parseAmount() (interface{}, error) {
 	}
 
 	amount := p.currentLine[:n]
-	fmt.Println("\tamount is", string(amount))
 	p.advanceCaret(n)
 
 	return amount, nil

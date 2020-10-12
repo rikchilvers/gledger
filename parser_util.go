@@ -16,7 +16,6 @@ const (
 	// Whitespace, comment or date
 	AwaitingTransaction ParserState = iota
 	InTransaction
-	BetweenTransactions
 	Stop
 )
 
@@ -27,7 +26,7 @@ const (
 	tab            = rune('\t')
 	newline        = rune('\n')
 	carriageReturn = rune('\r')
-	space          = rune(' ')
+	space          = rune(' ') // todo - handle all unicode whitespace
 	period         = rune('.')
 	semicolon      = rune(';')
 	exclamation    = rune('!')
