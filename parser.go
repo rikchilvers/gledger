@@ -10,11 +10,13 @@ import (
 )
 
 type Parser struct {
-	state              ParserState
-	reader             *bufio.Reader
-	line               int
-	column             int
-	currentLine        []rune
+	state       ParserState
+	reader      *bufio.Reader
+	line        int
+	column      int
+	currentLine []rune
+	// We might need to loop multiple lines for a posting if it has comments, so keep track of it here
+	currentPosting     *Posting
 	currentTransaction *Transaction
 	transactions       []*Transaction
 }
@@ -27,6 +29,7 @@ func NewParser() *Parser {
 		column:             1,
 		currentLine:        make([]rune, MaxLineLength),
 		currentTransaction: nil,
+		currentPosting:     nil,
 		transactions:       []*Transaction{},
 	}
 }
@@ -87,9 +90,19 @@ func (p *Parser) Parse(ledgerFile string) error {
 				log.Fatalln("not enough spaces before posting account/comment")
 			}
 
+			if p.currentPosting == nil {
+				p.currentPosting = &Posting{}
+			}
+
 			// At this point, we're expecting an account line or a comment
 			if isComment(p.currentLine[0]) {
-				p.parseComment()
+				comment, err := p.parseComment()
+				if err != nil {
+					return err
+				}
+				if len(comment) > 0 {
+					p.currentPosting.comments = append(p.currentPosting.comments, comment)
+				}
 			} else {
 				p.parsePosting()
 			}
@@ -230,10 +243,13 @@ func (p *Parser) parsePosting() error {
 	amount, err := p.parseAmount()
 
 	// Construct the posting
-	posting := newPosting(account, currency, amount)
-	p.currentTransaction.addPosting(posting)
+	p.currentPosting.account = account
+	p.currentPosting.currency = currency
+	p.currentPosting.amount = amount
+	p.currentTransaction.addPosting(*p.currentPosting)
 
 	// There could be a comment at the end of the line
+	// NB: End of line comments are discarded from postings
 	if len(p.currentLine) > 0 {
 		p.consumeWhitespace()
 		p.parseComment()
