@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode"
 )
 
 type Parser struct {
@@ -63,6 +64,31 @@ func (p *Parser) Parse(ledgerFile string) error {
 			break
 		}
 
+		// Determine the type of line
+
+		if len(p.currentLine) == 0 {
+			fmt.Println("skip")
+			continue
+		}
+
+		firstRune := p.currentLine[0]
+
+		if isComment(firstRune) {
+			fmt.Println("comment")
+		}
+
+		if unicode.IsNumber(firstRune) {
+			fmt.Println("transaction header")
+		}
+
+		// Other types of first char check go here
+
+		if p.consumeWhitespace() > 2 {
+			fmt.Println("posting")
+		}
+
+		continue
+
 		// Process the line
 		switch p.state {
 		case AwaitingTransaction:
@@ -75,7 +101,10 @@ func (p *Parser) Parse(ledgerFile string) error {
 				continue
 			} else if isNumeric(p.currentLine[0]) {
 				// We're expecting a transaction header here
-				p.parseTransactionHeader()
+				err := p.parseTransactionHeader()
+				if err != nil {
+					return err
+				}
 				fmt.Printf("%+v\n", p.currentTransaction)
 			} else {
 				log.Fatalln("Unexpected character beginning line", p.line)
@@ -155,7 +184,7 @@ func (p *Parser) advanceCaret(n int) {
 //
 // Advances the caret len(whitespace) places and returns this count
 func (p *Parser) consumeWhitespace() int {
-	fmt.Println(">> consumeWhitespace on line:", p.line)
+	// fmt.Println(">> consumeWhitespace on line:", p.line)
 	n := 0
 	spaces := 0
 	for {
