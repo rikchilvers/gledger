@@ -85,10 +85,34 @@ func (l *Lexer) lexLine() {
 	// Detect posting lines
 	if firstRune == '\t' || firstRune == ' ' && secondRune == ' ' {
 		fmt.Println("\tposting line")
+		l.lexPostingLine()
 		return
 	}
 
 	return
+}
+
+func (l *Lexer) lexPostingLine() {
+	l.consumeSpace()
+
+	firstRune := l.next()
+
+	if isCommentIndicator(firstRune) {
+		comment := l.takeToNextLine()
+		fmt.Println("\tlexed comment:", string(comment))
+		return
+	}
+
+	if unicode.IsLetter(firstRune) {
+		// We need to backup otherwise we'll miss the first rune of the account
+		l.backup()
+		account := l.takeUntilMoreThanOneSpace()
+		fmt.Println("\tlexed account:", string(account))
+		return
+	}
+
+	// If we didn't lex anything, we should reset the parser
+	l.backup()
 }
 
 // Move through the bytes of the input, converting to runes as we go
@@ -114,4 +138,52 @@ func (l *Lexer) peek() rune {
 // Steps back one rune
 func (l *Lexer) backup() {
 	l.pos -= l.width
+}
+
+func (l *Lexer) consumeSpace() {
+	for {
+		r := l.next()
+		if r == EOF || !unicode.IsSpace(r) {
+			l.backup()
+			return
+		}
+	}
+}
+
+func isCommentIndicator(r rune) bool {
+	return r == ';'
+}
+
+func (l *Lexer) takeToNextLine() []rune {
+	runes := make([]rune, 256)
+	for {
+		r := l.next()
+		if r == EOF {
+			return runes
+		}
+		runes = append(runes, r)
+	}
+}
+
+func (l *Lexer) takeUntilMoreThanOneSpace() []rune {
+	runes := make([]rune, 256)
+	var previous rune = -1
+	for {
+		r := l.next()
+		if r == EOF {
+			return runes
+		}
+
+		if r == '\t' {
+			return runes
+		}
+
+		if r == ' ' {
+			if previous != -1 && previous == ' ' {
+				return runes
+			}
+			previous = r
+		}
+		runes = append(runes, r)
+	}
 }
