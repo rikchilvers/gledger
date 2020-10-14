@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -23,6 +24,7 @@ const (
 )
 
 const EOF = -1
+const TabWidth = 2 // size of a tab in spaces
 
 type Lexer struct {
 	reader *bufio.Reader
@@ -49,7 +51,7 @@ func (l *Lexer) IngestLine(r io.Reader) {
 			log.Fatalln("Unhandled split line")
 		}
 
-		fmt.Printf("Line %2d:", count)
+		fmt.Printf("Line %2d\n", count)
 		// Reset the positions
 		l.pos = 0
 		l.start = 0
@@ -63,15 +65,30 @@ func (l *Lexer) IngestLine(r io.Reader) {
 
 // Lex the line
 func (l *Lexer) lexLine() {
-	fmt.Printf("\t%2d bytes", len(l.input))
-	count := 0
-	for {
-		if l.next() == EOF {
-			break
-		}
-		count++
+	// Bail early if the line is empty
+	if len(l.input) == 0 {
+		return
 	}
-	fmt.Printf("\t%2d runes\n", count)
+
+	firstRune := l.next()
+	if firstRune == EOF {
+		return
+	}
+	secondRune := l.peek()
+
+	// Detect transaction headers
+	if unicode.IsNumber(firstRune) {
+		fmt.Println(("\ttransaction header"))
+		return
+	}
+
+	// Detect posting lines
+	if firstRune == '\t' || firstRune == ' ' && secondRune == ' ' {
+		fmt.Println("\tposting line")
+		return
+	}
+
+	return
 }
 
 // Move through the bytes of the input, converting to runes as we go
