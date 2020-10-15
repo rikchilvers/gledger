@@ -117,9 +117,14 @@ func (l *Lexer) lexPostingLine() {
 			return
 		}
 
+		// Lex the currency
 		currency := l.lexCurrency()
 		fmt.Println("\tlexed currency:", string(currency))
 		l.consumeSpace()
+
+		// Lex the amount
+		amount := l.takeToNextLineOrComment()
+		fmt.Println("\tlexed amount:", string(amount))
 
 		return
 	}
@@ -213,6 +218,21 @@ func (l *Lexer) takeToNextLine() []rune {
 	for {
 		r := l.next()
 		if r == EOF {
+			return runes
+		}
+		runes = append(runes, r)
+	}
+}
+
+func (l *Lexer) takeToNextLineOrComment() []rune {
+	runes := make([]rune, 256)
+	for {
+		r := l.next()
+		if r == EOF {
+			return runes
+		}
+
+		if isCommentIndicator(r) {
 			return runes
 		}
 		runes = append(runes, r)
