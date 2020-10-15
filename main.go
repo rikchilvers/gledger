@@ -14,6 +14,6 @@ func main() {
 		log.Fatal(err)
 	}
 	defer file.Close()
-	lexer := Lexer{}
-	lexer.IngestLine(file)
+	lexer := lexer{}
+	lexer.lex(file)
 }

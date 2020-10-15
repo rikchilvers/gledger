@@ -26,7 +26,7 @@ const (
 const EOF = -1
 const TabWidth = 2 // size of a tab in spaces
 
-type Lexer struct {
+type lexer struct {
 	reader *bufio.Reader
 	input  []byte
 	pos    int // input position
@@ -35,7 +35,7 @@ type Lexer struct {
 }
 
 // Lexes the file line by line
-func (l *Lexer) IngestLine(r io.Reader) {
+func (l *lexer) lex(r io.Reader) {
 	l.reader = bufio.NewReader(r)
 
 	count := 1
@@ -64,7 +64,7 @@ func (l *Lexer) IngestLine(r io.Reader) {
 }
 
 // Lex the line
-func (l *Lexer) lexLine() {
+func (l *lexer) lexLine() {
 	// Bail early if the line is empty
 	if len(l.input) == 0 {
 		return
@@ -94,7 +94,7 @@ func (l *Lexer) lexLine() {
 	return
 }
 
-func (l *Lexer) lexTransactionHeader() {
+func (l *lexer) lexTransactionHeader() {
 	// Need to backup to include the first rune
 	l.backup()
 
@@ -118,7 +118,7 @@ func (l *Lexer) lexTransactionHeader() {
 
 }
 
-func (l *Lexer) lexPostingLine() {
+func (l *lexer) lexPostingLine() {
 	l.consumeSpace()
 
 	firstRune := l.next()
@@ -160,7 +160,7 @@ func (l *Lexer) lexPostingLine() {
 }
 
 // Takes until a number or a space
-func (l *Lexer) lexCurrency() []rune {
+func (l *lexer) lexCurrency() []rune {
 	runes := make([]rune, 256)
 	for {
 		r := l.next()
@@ -182,7 +182,7 @@ func (l *Lexer) lexCurrency() []rune {
 }
 
 // Move through the bytes of the input, converting to runes as we go
-func (l *Lexer) next() rune {
+func (l *lexer) next() rune {
 	if l.pos >= len(l.input) {
 		l.width = 0
 		return EOF
@@ -195,20 +195,20 @@ func (l *Lexer) next() rune {
 }
 
 // Peek at the next rune
-func (l *Lexer) peek() rune {
+func (l *lexer) peek() rune {
 	r := l.next()
 	l.backup()
 	return r
 }
 
 // Steps back one rune
-func (l *Lexer) backup() {
+func (l *lexer) backup() {
 	l.pos -= l.width
 }
 
 // Consumes spaces
 // Returns how many spaces were consumed
-func (l *Lexer) consumeSpace() int {
+func (l *lexer) consumeSpace() int {
 	count := 0
 	for {
 		r := l.next()
@@ -239,7 +239,7 @@ func countSpace(r rune) int {
 	return 0
 }
 
-func (l *Lexer) takeToNextLine() []rune {
+func (l *lexer) takeToNextLine() []rune {
 	runes := make([]rune, 256)
 	for {
 		r := l.next()
@@ -250,7 +250,7 @@ func (l *Lexer) takeToNextLine() []rune {
 	}
 }
 
-func (l *Lexer) takeToNextLineOrComment() []rune {
+func (l *lexer) takeToNextLineOrComment() []rune {
 	runes := make([]rune, 256)
 	for {
 		r := l.next()
@@ -265,7 +265,7 @@ func (l *Lexer) takeToNextLineOrComment() []rune {
 	}
 }
 
-func (l *Lexer) takeUntilSpace() []rune {
+func (l *lexer) takeUntilSpace() []rune {
 	defer l.backup()
 	runes := make([]rune, 256)
 	for {
@@ -278,7 +278,7 @@ func (l *Lexer) takeUntilSpace() []rune {
 	}
 }
 
-func (l *Lexer) takeUntilMoreThanOneSpace() []rune {
+func (l *lexer) takeUntilMoreThanOneSpace() []rune {
 	// TODO: make this a buffer on the lexer
 	runes := make([]rune, 256)
 	var previous rune = -1
