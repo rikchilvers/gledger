@@ -100,6 +100,22 @@ func (l *Lexer) lexTransactionHeader() {
 
 	date := l.takeUntilSpace()
 	fmt.Println("\tlexed date:", string(date))
+
+	l.consumeSpace()
+	next := l.next()
+	if next == '!' {
+		fmt.Println("\tlexed state:", "!")
+		l.consumeSpace()
+	} else if next == '*' {
+		fmt.Println("\tlexed state:", "*")
+		l.consumeSpace()
+	} else {
+		l.backup()
+	}
+
+	payee := l.takeToNextLineOrComment()
+	fmt.Println("\tlexed payee:", string(payee))
+
 }
 
 func (l *Lexer) lexPostingLine() {
@@ -250,6 +266,7 @@ func (l *Lexer) takeToNextLineOrComment() []rune {
 }
 
 func (l *Lexer) takeUntilSpace() []rune {
+	defer l.backup()
 	runes := make([]rune, 256)
 	for {
 		r := l.next()
