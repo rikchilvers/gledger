@@ -10,7 +10,7 @@ import (
 	"unicode"
 )
 
-type Parser struct {
+type OldParser struct {
 	state       ParserState
 	reader      *bufio.Reader
 	line        int
@@ -22,8 +22,8 @@ type Parser struct {
 	transactions       []*Transaction
 }
 
-func NewParser() *Parser {
-	return &Parser{
+func NewParser() *OldParser {
+	return &OldParser{
 		state:              AwaitingTransaction,
 		reader:             nil,
 		line:               0, // has to be zero because of how ReadLine works
@@ -35,7 +35,7 @@ func NewParser() *Parser {
 	}
 }
 
-func (p *Parser) NextState() {
+func (p *OldParser) NextState() {
 	switch p.state {
 	case AwaitingTransaction:
 		p.state = InTransaction
@@ -48,7 +48,7 @@ func (p *Parser) NextState() {
 	}
 }
 
-func (p *Parser) Parse(ledgerFile string) error {
+func (p *OldParser) Parse(ledgerFile string) error {
 	fmt.Println(">> parse", ledgerFile)
 	file, err := os.Open(ledgerFile)
 	if err != nil {
@@ -154,7 +154,7 @@ func (p *Parser) Parse(ledgerFile string) error {
 // Reads until the end of a line
 //
 // Returns a hint as to whether there are more lines to read
-func (p *Parser) ReadLine() bool {
+func (p *OldParser) ReadLine() bool {
 	fmt.Println(">> ReadLine", p.line+1)
 	// Reset the line
 	p.currentLine = nil
@@ -175,7 +175,7 @@ func (p *Parser) ReadLine() bool {
 	}
 }
 
-func (p *Parser) advanceCaret(n int) {
+func (p *OldParser) advanceCaret(n int) {
 	p.column += n
 	p.currentLine = p.currentLine[n:]
 }
@@ -183,7 +183,7 @@ func (p *Parser) advanceCaret(n int) {
 // Consume whitespace
 //
 // Advances the caret len(whitespace) places and returns this count
-func (p *Parser) consumeWhitespace() int {
+func (p *OldParser) consumeWhitespace() int {
 	// fmt.Println(">> consumeWhitespace on line:", p.line)
 	n := 0
 	spaces := 0
@@ -204,7 +204,7 @@ func (p *Parser) consumeWhitespace() int {
 
 // Attemps to parse a comment
 // Does not need to advance the caret because comments always end at line end
-func (p *Parser) parseComment() (string, error) {
+func (p *OldParser) parseComment() (string, error) {
 	fmt.Println(">> parseComment on line:", p.line)
 	start := 0
 	if isComment(p.currentLine[0]) {
@@ -214,7 +214,7 @@ func (p *Parser) parseComment() (string, error) {
 	return strings.TrimSpace(string(comment)), nil
 }
 
-func (p *Parser) parseTransactionHeader() error {
+func (p *OldParser) parseTransactionHeader() error {
 	fmt.Println(">> parseTransactionHeader on line:", p.line)
 	p.currentTransaction = &Transaction{}
 
@@ -256,7 +256,7 @@ func (p *Parser) parseTransactionHeader() error {
 	return nil
 }
 
-func (p *Parser) parsePosting() error {
+func (p *OldParser) parsePosting() error {
 	fmt.Println(">> parsePosting on line:", p.line)
 	account, err := p.parseAccount()
 	if err != nil {
@@ -286,7 +286,7 @@ func (p *Parser) parsePosting() error {
 }
 
 // Advances 10 runes to parse the date
-func (p *Parser) parseDate() (time.Time, error) {
+func (p *OldParser) parseDate() (time.Time, error) {
 	fmt.Println(">> parseDate on line:", p.line)
 	runes := p.currentLine[:10]
 	date, err := time.Parse(DateFormat, string(runes))
@@ -299,7 +299,7 @@ func (p *Parser) parseDate() (time.Time, error) {
 }
 
 // Advances len(payee)
-func (p *Parser) parsePayee() (string, error) {
+func (p *OldParser) parsePayee() (string, error) {
 	fmt.Println(">> parsePayee on line:", p.line)
 
 	n := 0
@@ -319,7 +319,7 @@ func (p *Parser) parsePayee() (string, error) {
 }
 
 // Parses an account
-func (p *Parser) parseAccount() (string, error) {
+func (p *OldParser) parseAccount() (string, error) {
 	fmt.Println(">> parseAccount on line:", p.line)
 
 	// Search for index of >= 2 spaces
@@ -364,7 +364,7 @@ func (p *Parser) parseAccount() (string, error) {
 	return account, nil
 }
 
-func (p *Parser) parseCurrency() (interface{}, error) {
+func (p *OldParser) parseCurrency() (interface{}, error) {
 	fmt.Println(">> parseCurrency on line:", p.line)
 
 	// The currency might be elided
@@ -386,7 +386,7 @@ func (p *Parser) parseCurrency() (interface{}, error) {
 	return currency, nil
 }
 
-func (p *Parser) parseAmount() (interface{}, error) {
+func (p *OldParser) parseAmount() (interface{}, error) {
 	fmt.Println(">> parseAmount on line:", p.line)
 
 	n := -1
