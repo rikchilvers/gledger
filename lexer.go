@@ -108,11 +108,46 @@ func (l *Lexer) lexPostingLine() {
 		l.backup()
 		account := l.takeUntilMoreThanOneSpace()
 		fmt.Println("\tlexed account:", string(account))
+
+		// Bail if there are not enough spaces
+		if l.consumeSpace() < 2 {
+			if len(l.input)-l.pos > 1 {
+				log.Fatalln("Not enough spaces following account", len(l.input)-l.pos)
+			}
+			return
+		}
+
+		currency := l.lexCurrency()
+		fmt.Println("\tlexed currency:", string(currency))
+		l.consumeSpace()
+
 		return
 	}
 
 	// If we didn't lex anything, we should reset the parser
 	l.backup()
+}
+
+// Takes until a number or a space
+func (l *Lexer) lexCurrency() []rune {
+	runes := make([]rune, 256)
+	for {
+		r := l.next()
+		if r == EOF {
+			return runes
+		}
+
+		if unicode.IsNumber(r) {
+			l.backup()
+			return runes
+		}
+
+		if r == ' ' || r == '\t' {
+			return runes
+		}
+
+		runes = append(runes, r)
+	}
 }
 
 // Move through the bytes of the input, converting to runes as we go
@@ -140,18 +175,37 @@ func (l *Lexer) backup() {
 	l.pos -= l.width
 }
 
-func (l *Lexer) consumeSpace() {
+// Consumes spaces
+// Returns how many spaces were consumed
+func (l *Lexer) consumeSpace() int {
+	count := 0
 	for {
 		r := l.next()
 		if r == EOF || !unicode.IsSpace(r) {
 			l.backup()
-			return
+			return count
+		}
+		if r == '\t' {
+			count += TabWidth
+		}
+		if r == ' ' {
+			count++
 		}
 	}
 }
 
 func isCommentIndicator(r rune) bool {
 	return r == ';'
+}
+
+func countSpace(r rune) int {
+	if r == ' ' {
+		return 1
+	} else if r == '\t' {
+		return TabWidth
+	}
+
+	return 0
 }
 
 func (l *Lexer) takeToNextLine() []rune {
@@ -166,6 +220,7 @@ func (l *Lexer) takeToNextLine() []rune {
 }
 
 func (l *Lexer) takeUntilMoreThanOneSpace() []rune {
+	// TODO: make this a buffer on the lexer
 	runes := make([]rune, 256)
 	var previous rune = -1
 	for {
