@@ -77,8 +77,10 @@ func (l *Lexer) lexLine() {
 	secondRune := l.peek()
 
 	// Detect transaction headers
+	// TODO: handle passing different transaction header indicators
 	if unicode.IsNumber(firstRune) {
 		fmt.Println(("\ttransaction header"))
+		l.lexTransactionHeader()
 		return
 	}
 
@@ -90,6 +92,14 @@ func (l *Lexer) lexLine() {
 	}
 
 	return
+}
+
+func (l *Lexer) lexTransactionHeader() {
+	// Need to backup to include the first rune
+	l.backup()
+
+	date := l.takeUntilSpace()
+	fmt.Println("\tlexed date:", string(date))
 }
 
 func (l *Lexer) lexPostingLine() {
@@ -235,6 +245,18 @@ func (l *Lexer) takeToNextLineOrComment() []rune {
 		if isCommentIndicator(r) {
 			return runes
 		}
+		runes = append(runes, r)
+	}
+}
+
+func (l *Lexer) takeUntilSpace() []rune {
+	runes := make([]rune, 256)
+	for {
+		r := l.next()
+		if r == ' ' {
+			return runes
+		}
+
 		runes = append(runes, r)
 	}
 }
