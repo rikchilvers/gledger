@@ -24,9 +24,9 @@ const (
 	tComment
 )
 
-const EOF = -1
-const TabWidth = 2 // size of a tab in spaces
-const RuneBufferCapacity = 256
+const eof = -1
+const tabWidth = 2 // size of a tab in spaces
+const runeBufferCapacity = 256
 
 type lexer struct {
 	reader *bufio.Reader
@@ -74,7 +74,7 @@ func (l *lexer) lexLine() {
 	}
 
 	firstRune := l.next()
-	if firstRune == EOF {
+	if firstRune == eof {
 		return
 	}
 	secondRune := l.peek()
@@ -169,10 +169,10 @@ func (l *lexer) lexPostingLine() {
 
 // Takes until a number or a space
 func (l *lexer) lexCurrency() []rune {
-	runes := make([]rune, 0, RuneBufferCapacity)
+	runes := make([]rune, 0, runeBufferCapacity)
 	for {
 		r := l.next()
-		if r == EOF {
+		if r == eof {
 			return runes
 		}
 
@@ -193,7 +193,7 @@ func (l *lexer) lexCurrency() []rune {
 func (l *lexer) next() rune {
 	if l.pos >= len(l.input) {
 		l.width = 0
-		return EOF
+		return eof
 	}
 
 	runeValue, runeWidth := utf8.DecodeRune(l.input[l.pos:])
@@ -220,12 +220,12 @@ func (l *lexer) consumeSpace() int {
 	count := 0
 	for {
 		r := l.next()
-		if r == EOF || !unicode.IsSpace(r) {
+		if r == eof || !unicode.IsSpace(r) {
 			l.backup()
 			return count
 		}
 		if r == '\t' {
-			count += TabWidth
+			count += tabWidth
 		}
 		if r == ' ' {
 			count++
@@ -241,17 +241,17 @@ func countSpace(r rune) int {
 	if r == ' ' {
 		return 1
 	} else if r == '\t' {
-		return TabWidth
+		return tabWidth
 	}
 
 	return 0
 }
 
 func (l *lexer) takeToNextLine() []rune {
-	runes := make([]rune, 0, RuneBufferCapacity)
+	runes := make([]rune, 0, runeBufferCapacity)
 	for {
 		r := l.next()
-		if r == EOF {
+		if r == eof {
 			return runes
 		}
 		runes = append(runes, r)
@@ -259,10 +259,10 @@ func (l *lexer) takeToNextLine() []rune {
 }
 
 func (l *lexer) takeToNextLineOrComment() []rune {
-	runes := make([]rune, 0, RuneBufferCapacity)
+	runes := make([]rune, 0, runeBufferCapacity)
 	for {
 		r := l.next()
-		if r == EOF {
+		if r == eof {
 			return runes
 		}
 
@@ -275,7 +275,7 @@ func (l *lexer) takeToNextLineOrComment() []rune {
 
 func (l *lexer) takeUntilSpace() []rune {
 	defer l.backup()
-	runes := make([]rune, 0, RuneBufferCapacity)
+	runes := make([]rune, 0, runeBufferCapacity)
 	for {
 		r := l.next()
 		if r == ' ' {
@@ -288,11 +288,11 @@ func (l *lexer) takeUntilSpace() []rune {
 
 func (l *lexer) takeUntilMoreThanOneSpace() []rune {
 	// TODO: make this a buffer on the lexer
-	runes := make([]rune, 0, RuneBufferCapacity)
+	runes := make([]rune, 0, runeBufferCapacity)
 	var previous rune = -1
 	for {
 		r := l.next()
-		if r == EOF {
+		if r == eof {
 			return runes
 		}
 

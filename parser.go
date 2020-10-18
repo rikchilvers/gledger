@@ -63,11 +63,11 @@ func (p *parser) parseItem(t itemType, content []rune) {
 
 		switch content[0] {
 		case '!':
-			p.currentTransaction.state = Uncleared
+			p.currentTransaction.state = tUncleared
 		case '*':
-			p.currentTransaction.state = Cleared
+			p.currentTransaction.state = tCleared
 		default:
-			p.currentTransaction.state = NoState
+			p.currentTransaction.state = tNoState
 		}
 	case tPayee:
 		if p.previousItemType != tDate && p.previousItemType != tState {

@@ -8,17 +8,17 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[NoState-0]
-	_ = x[Uncleared-1]
-	_ = x[Cleared-2]
+	_ = x[tNoState-0]
+	_ = x[tUncleared-1]
+	_ = x[tCleared-2]
 }
 
 const _TransactionState_name = "NoStateUnclearedCleared"
 
 var _TransactionState_index = [...]uint8{0, 7, 16, 23}
 
-func (i TransactionState) String() string {
-	if i < 0 || i >= TransactionState(len(_TransactionState_index)-1) {
+func (i transactionState) String() string {
+	if i < 0 || i >= transactionState(len(_TransactionState_index)-1) {
 		return "TransactionState(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
 	return _TransactionState_name[_TransactionState_index[i]:_TransactionState_index[i+1]]

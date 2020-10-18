@@ -48,13 +48,13 @@ func isState(r rune) bool {
 	return r == exclamation || r == star
 }
 
-func toState(r rune) TransactionState {
+func toState(r rune) transactionState {
 	switch r {
 	case exclamation:
-		return Uncleared
+		return tUncleared
 	case star:
-		return Cleared
+		return tCleared
 	default:
-		return NoState
+		return tNoState
 	}
 }

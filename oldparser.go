@@ -227,7 +227,7 @@ func (p *OldParser) parseTransactionHeader() error {
 
 	// Handle possible state
 	p.consumeWhitespace()
-	state := NoState
+	state := tNoState
 	if isState(p.currentLine[0]) {
 		state = toState(p.currentLine[0])
 		p.advanceCaret(1)

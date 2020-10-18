@@ -6,18 +6,18 @@ import (
 	"time"
 )
 
-//go:generate stringer -type=TransactionState
-type TransactionState int
+//go:generate stringer -type=transactionState
+type transactionState int
 
 const (
-	NoState TransactionState = iota
-	Uncleared
-	Cleared
+	tNoState transactionState = iota
+	tUncleared
+	tCleared
 )
 
 type transaction struct {
 	date                      time.Time
-	state                     TransactionState
+	state                     transactionState
 	payee                     string
 	postingsWithElidedAmounts int
 	postings                  []posting
