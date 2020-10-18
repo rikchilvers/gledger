@@ -11,10 +11,11 @@ import (
 	"unicode/utf8"
 )
 
-type ItemType int
+//go:generate stringer -type=itemType
+type itemType int
 
 const (
-	tDate ItemType = iota
+	tDate itemType = iota
 	tState
 	tPayee
 	tAccount

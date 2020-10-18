@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"time"
 )
 
+//go:generate stringer -type=TransactionState
 type TransactionState int
 
 const (
@@ -21,8 +23,12 @@ type Transaction struct {
 	postings                  []Posting
 }
 
-func newTransaction() Transaction {
-	return Transaction{}
+func newTransaction() *Transaction {
+	return &Transaction{}
+}
+
+func (t Transaction) String() string {
+	return fmt.Sprintf("Transaction:\n\t%s\n\t%s\n\t%s\n\t%d postings (%d)", t.date, t.state.String(), t.payee, len(t.postings), t.postingsWithElidedAmounts)
 }
 
 func (t *Transaction) addPosting(p Posting) error {
