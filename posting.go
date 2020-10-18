@@ -1,6 +1,6 @@
 package main
 
-type Posting struct {
+type posting struct {
 	comments []string
 	account  string
 	currency interface{}
@@ -8,8 +8,8 @@ type Posting struct {
 	amount interface{}
 }
 
-func newPosting(comments []string, account string, currency interface{}, amount interface{}) *Posting {
-	return &Posting{
+func newPosting(comments []string, account string, currency interface{}, amount interface{}) *posting {
+	return &posting{
 		comments,
 		account,
 		currency,

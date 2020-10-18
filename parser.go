@@ -13,7 +13,7 @@ const DateFormat string = "2006-01-02"
 
 type parser struct {
 	previousItemType   itemType
-	currentPosting     *Posting
+	currentPosting     *posting
 	currentTransaction *Transaction
 	transactions       []*Transaction
 }
@@ -85,7 +85,7 @@ func (p *parser) parseItem(t itemType, content []rune) {
 		if p.currentPosting != nil {
 			p.currentTransaction.addPosting(*p.currentPosting)
 		}
-		p.currentPosting = &Posting{}
+		p.currentPosting = &posting{}
 
 		p.currentPosting.account = strings.TrimSpace(string(content))
 	default:

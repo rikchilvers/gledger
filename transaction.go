@@ -20,7 +20,7 @@ type Transaction struct {
 	state                     TransactionState
 	payee                     string
 	postingsWithElidedAmounts int
-	postings                  []Posting
+	postings                  []posting
 }
 
 func newTransaction() *Transaction {
@@ -31,7 +31,7 @@ func (t Transaction) String() string {
 	return fmt.Sprintf("Transaction:\n\t%s\n\t%s\n\t%s\n\t%d postings (%d)", t.date, t.state.String(), t.payee, len(t.postings), t.postingsWithElidedAmounts)
 }
 
-func (t *Transaction) addPosting(p Posting) error {
+func (t *Transaction) addPosting(p posting) error {
 	if _, ok := p.amount.(float32); ok {
 		t.postingsWithElidedAmounts++
 		if t.postingsWithElidedAmounts > 1 {

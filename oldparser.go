@@ -17,7 +17,7 @@ type OldParser struct {
 	column      int
 	currentLine []rune
 	// We might need to loop multiple lines for a posting if it has comments, so keep track of it here
-	currentPosting     *Posting
+	currentPosting     *posting
 	currentTransaction *Transaction
 	transactions       []*Transaction
 }
@@ -125,7 +125,7 @@ func (p *OldParser) Parse(ledgerFile string) error {
 			}
 
 			if p.currentPosting == nil {
-				p.currentPosting = &Posting{}
+				p.currentPosting = &posting{}
 			}
 
 			// At this point, we're expecting an account line or a comment
