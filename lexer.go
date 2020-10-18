@@ -90,7 +90,7 @@ func (l *lexer) lexLine() {
 	// Detect posting lines
 	if firstRune == '\t' || firstRune == ' ' && secondRune == ' ' {
 		fmt.Println("\tposting line")
-		l.lexPostingLine()
+		l.lexPosting()
 		return
 	}
 
@@ -124,7 +124,7 @@ func (l *lexer) lexTransactionHeader() {
 	l.parser.parseItem(tPayee, payee)
 }
 
-func (l *lexer) lexPostingLine() {
+func (l *lexer) lexPosting() {
 	l.consumeSpace()
 
 	firstRune := l.next()
@@ -178,7 +178,7 @@ func (l *lexer) lexCurrency() []rune {
 			return runes
 		}
 
-		if unicode.IsNumber(r) {
+		if unicode.IsNumber(r) || r == '-' || r == '+' {
 			l.backup()
 			return runes
 		}
@@ -289,25 +289,28 @@ func (l *lexer) takeUntilSpace() []rune {
 }
 
 func (l *lexer) takeUntilMoreThanOneSpace() []rune {
-	// TODO: make this a buffer on the lexer
+	// TODO: make this runes slice a buffer on the lexer
 	runes := make([]rune, 0, runeBufferCapacity)
 	var previous rune = -1
 	for {
-		r := l.next()
+		r := l.peek()
 		if r == eof {
 			return runes
 		}
 
 		if r == '\t' {
 			return runes
-		}
-
-		if r == ' ' {
-			if previous != -1 && previous == ' ' {
+		} else if r == ' ' {
+			if previous == ' ' {
+				l.backup()
 				return runes
 			}
 			previous = r
+		} else {
+			previous = -1
 		}
+
+		l.next()
 		runes = append(runes, r)
 	}
 }
