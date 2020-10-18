@@ -8,8 +8,8 @@ type Posting struct {
 	amount interface{}
 }
 
-func newPosting(comments []string, account string, currency interface{}, amount interface{}) Posting {
-	return Posting{
+func newPosting(comments []string, account string, currency interface{}, amount interface{}) *Posting {
+	return &Posting{
 		comments,
 		account,
 		currency,

@@ -34,6 +34,7 @@ type lexer struct {
 	pos    int // input position
 	start  int // item start position
 	width  int // width of last element
+	parser *parser
 }
 
 // Lexes the file line by line
@@ -102,14 +103,17 @@ func (l *lexer) lexTransactionHeader() {
 
 	date := l.takeUntilSpace()
 	fmt.Println("\tlexed date:", string(date))
+	l.parser.parseItem(tDate, date)
 
 	l.consumeSpace()
 	next := l.next()
 	if next == '!' {
 		fmt.Println("\tlexed state:", "!")
+		l.parser.parseItem(tState, []rune{'!'})
 		l.consumeSpace()
 	} else if next == '*' {
 		fmt.Println("\tlexed state:", "*")
+		l.parser.parseItem(tState, []rune{'*'})
 		l.consumeSpace()
 	} else {
 		l.backup()
@@ -117,7 +121,7 @@ func (l *lexer) lexTransactionHeader() {
 
 	payee := l.takeToNextLineOrComment()
 	fmt.Println("\tlexed payee:", string(payee))
-
+	l.parser.parseItem(tPayee, payee)
 }
 
 func (l *lexer) lexPostingLine() {
@@ -128,6 +132,7 @@ func (l *lexer) lexPostingLine() {
 	if isCommentIndicator(firstRune) {
 		comment := l.takeToNextLine()
 		fmt.Println("\tlexed comment:", string(comment))
+		// l.parser.parseItem(tComment, comment)
 		return
 	}
 
@@ -136,6 +141,7 @@ func (l *lexer) lexPostingLine() {
 		l.backup()
 		account := l.takeUntilMoreThanOneSpace()
 		fmt.Println("\tlexed account:", string(account))
+		l.parser.parseItem(tAccount, account)
 
 		// Bail if there are not enough spaces
 		if l.consumeSpace() < 2 {

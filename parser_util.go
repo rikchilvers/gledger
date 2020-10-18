@@ -1,8 +1,5 @@
 package main
 
-// The date format journal files use
-const DateFormat string = "2006-01-02"
-
 // Max line length in runes
 const MaxLineLength int = 255
 
