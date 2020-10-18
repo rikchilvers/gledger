@@ -280,6 +280,11 @@ func (l *lexer) takeUntilSpace() []rune {
 	runes := make([]rune, 0, runeBufferCapacity)
 	for {
 		r := l.next()
+
+		if r == eof {
+			return runes
+		}
+
 		if r == ' ' {
 			return runes
 		}
@@ -313,4 +318,19 @@ func (l *lexer) takeUntilMoreThanOneSpace() []rune {
 		l.next()
 		runes = append(runes, r)
 	}
+}
+
+func (l *lexer) takeUntilDecimal() []rune {
+	// Take until a decimal or the end of the line
+	runes := make([]rune, 0, runeBufferCapacity)
+	for {
+		r := l.next()
+		if r == '.' || r == eof {
+			break
+		}
+
+		runes = append(runes, r)
+	}
+
+	return runes
 }

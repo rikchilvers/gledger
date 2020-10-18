@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -106,8 +107,41 @@ func (p *parser) parseItem(t itemType, content []rune) {
 		if p.currentPosting.amount == nil {
 			p.currentPosting.amount = newAmount()
 		}
+		// Handle signs
+		firstRune := content[0]
+		var multiplier int64
+		if firstRune == '+' {
+			multiplier = 1
+			content = content[1:]
+		} else if firstRune == '-' {
+			multiplier = -1
+			content = content[1:]
+		} else {
+			multiplier = 1
+		}
 
-		p.currentPosting.amount.quantity = int64(1)
+		// Find out if we have a decimal number
+		decimalPosition := -1
+		for i, r := range content {
+			if r == '.' {
+				decimalPosition = i
+				break
+			}
+		}
+
+		// Find whole and decimal
+		var whole int64
+		var decimal int64
+		if decimalPosition == -1 {
+			// TODO: consider https://stackoverflow.com/a/29255836
+			whole, _ = strconv.ParseInt(string(content), 10, 64)
+			decimal = 0
+		} else {
+			whole, _ = strconv.ParseInt(string(content[:decimalPosition]), 10, 64)
+			decimal, _ = strconv.ParseInt(string(content[decimalPosition+1:]), 10, 64)
+		}
+
+		p.currentPosting.amount.quantity = multiplier * (whole*100 + decimal)
 	default:
 		fmt.Println("Unhandled itemType", p.previousItemType)
 	}
