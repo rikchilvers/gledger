@@ -15,7 +15,7 @@ const (
 	Cleared
 )
 
-type Transaction struct {
+type transaction struct {
 	date                      time.Time
 	state                     TransactionState
 	payee                     string
@@ -23,15 +23,15 @@ type Transaction struct {
 	postings                  []posting
 }
 
-func newTransaction() *Transaction {
-	return &Transaction{}
+func newTransaction() *transaction {
+	return &transaction{}
 }
 
-func (t Transaction) String() string {
+func (t transaction) String() string {
 	return fmt.Sprintf("Transaction:\n\t%s\n\t%s\n\t%s\n\t%d postings (%d)", t.date, t.state.String(), t.payee, len(t.postings), t.postingsWithElidedAmounts)
 }
 
-func (t *Transaction) addPosting(p posting) error {
+func (t *transaction) addPosting(p posting) error {
 	if _, ok := p.amount.(float32); ok {
 		t.postingsWithElidedAmounts++
 		if t.postingsWithElidedAmounts > 1 {
@@ -43,7 +43,7 @@ func (t *Transaction) addPosting(p posting) error {
 	return nil
 }
 
-func (t *Transaction) close() error {
+func (t *transaction) close() error {
 	sum := float32(0)
 	for _, p := range t.postings {
 		if amount, ok := p.amount.(float32); ok {

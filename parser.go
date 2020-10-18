@@ -14,8 +14,8 @@ const DateFormat string = "2006-01-02"
 type parser struct {
 	previousItemType   itemType
 	currentPosting     *posting
-	currentTransaction *Transaction
-	transactions       []*Transaction
+	currentTransaction *transaction
+	transactions       []*transaction
 }
 
 func newParser() *parser {
@@ -23,7 +23,7 @@ func newParser() *parser {
 		previousItemType:   -1,
 		currentPosting:     nil,
 		currentTransaction: nil,
-		transactions:       make([]*Transaction, 0, 256),
+		transactions:       make([]*transaction, 0, 256),
 	}
 }
 

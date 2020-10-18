@@ -18,8 +18,8 @@ type OldParser struct {
 	currentLine []rune
 	// We might need to loop multiple lines for a posting if it has comments, so keep track of it here
 	currentPosting     *posting
-	currentTransaction *Transaction
-	transactions       []*Transaction
+	currentTransaction *transaction
+	transactions       []*transaction
 }
 
 func NewParser() *OldParser {
@@ -31,7 +31,7 @@ func NewParser() *OldParser {
 		currentLine:        make([]rune, MaxLineLength),
 		currentTransaction: nil,
 		currentPosting:     nil,
-		transactions:       []*Transaction{},
+		transactions:       []*transaction{},
 	}
 }
 
@@ -216,7 +216,7 @@ func (p *OldParser) parseComment() (string, error) {
 
 func (p *OldParser) parseTransactionHeader() error {
 	fmt.Println(">> parseTransactionHeader on line:", p.line)
-	p.currentTransaction = &Transaction{}
+	p.currentTransaction = &transaction{}
 
 	// Parse the date
 	date, err := p.parseDate()
