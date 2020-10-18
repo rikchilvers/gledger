@@ -26,6 +26,7 @@ const (
 
 const EOF = -1
 const TabWidth = 2 // size of a tab in spaces
+const RuneBufferCapacity = 256
 
 type lexer struct {
 	reader *bufio.Reader
@@ -162,7 +163,7 @@ func (l *lexer) lexPostingLine() {
 
 // Takes until a number or a space
 func (l *lexer) lexCurrency() []rune {
-	runes := make([]rune, 256)
+	runes := make([]rune, 0, RuneBufferCapacity)
 	for {
 		r := l.next()
 		if r == EOF {
@@ -241,7 +242,7 @@ func countSpace(r rune) int {
 }
 
 func (l *lexer) takeToNextLine() []rune {
-	runes := make([]rune, 256)
+	runes := make([]rune, 0, RuneBufferCapacity)
 	for {
 		r := l.next()
 		if r == EOF {
@@ -252,7 +253,7 @@ func (l *lexer) takeToNextLine() []rune {
 }
 
 func (l *lexer) takeToNextLineOrComment() []rune {
-	runes := make([]rune, 256)
+	runes := make([]rune, 0, RuneBufferCapacity)
 	for {
 		r := l.next()
 		if r == EOF {
@@ -268,7 +269,7 @@ func (l *lexer) takeToNextLineOrComment() []rune {
 
 func (l *lexer) takeUntilSpace() []rune {
 	defer l.backup()
-	runes := make([]rune, 256)
+	runes := make([]rune, 0, RuneBufferCapacity)
 	for {
 		r := l.next()
 		if r == ' ' {
@@ -281,7 +282,7 @@ func (l *lexer) takeUntilSpace() []rune {
 
 func (l *lexer) takeUntilMoreThanOneSpace() []rune {
 	// TODO: make this a buffer on the lexer
-	runes := make([]rune, 256)
+	runes := make([]rune, 0, RuneBufferCapacity)
 	var previous rune = -1
 	for {
 		r := l.next()
