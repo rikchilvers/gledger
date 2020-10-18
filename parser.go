@@ -15,7 +15,7 @@ type parser struct {
 	previousItemType   itemType
 	currentPosting     *posting
 	currentTransaction *transaction
-	transactions       []*transaction
+	journal            *journal
 }
 
 func newParser() *parser {
@@ -23,7 +23,7 @@ func newParser() *parser {
 		previousItemType:   -1,
 		currentPosting:     nil,
 		currentTransaction: nil,
-		transactions:       make([]*transaction, 0, 256),
+		journal:            newJournal(),
 	}
 }
 
@@ -36,7 +36,7 @@ func (p *parser) parse(r io.Reader) {
 	// Make sure we close the final transaction
 	p.endTransaction()
 
-	for _, t := range p.transactions {
+	for _, t := range p.journal.transactions {
 		fmt.Println()
 		fmt.Println(t)
 	}
@@ -83,11 +83,31 @@ func (p *parser) parseItem(t itemType, content []rune) {
 		// Accounts start a posting, so check if we need to start a new one
 		// (When a transaction is started, the current posting is set to nil)
 		if p.currentPosting != nil {
-			p.currentTransaction.addPosting(*p.currentPosting)
+			p.currentTransaction.addPosting(p.currentPosting)
 		}
-		p.currentPosting = &posting{}
+		p.currentPosting = newPosting()
 
-		p.currentPosting.account = strings.TrimSpace(string(content))
+		p.currentPosting.account = newAccount(strings.TrimSpace(string(content)))
+	case tCommodity:
+		if p.previousItemType != tAccount {
+			log.Fatalln("Unexpected currency", p.previousItemType)
+		}
+
+		if p.currentPosting.amount == nil {
+			p.currentPosting.amount = newAmount()
+		}
+
+		p.currentPosting.amount.commodity = strings.TrimSpace(string(content))
+	case tAmount:
+		if p.previousItemType != tCommodity && p.previousItemType != tPayee {
+			log.Fatalln("Unexpected amount", p.previousItemType)
+		}
+
+		if p.currentPosting.amount == nil {
+			p.currentPosting.amount = newAmount()
+		}
+
+		p.currentPosting.amount.quantity = int64(1)
 	default:
 		fmt.Println("Unhandled itemType", p.previousItemType)
 	}
@@ -96,13 +116,15 @@ func (p *parser) parseItem(t itemType, content []rune) {
 }
 
 func (p *parser) endTransaction() {
-	if p.currentTransaction != nil {
-		// Make sure we add the last open posting
-		// TODO: do this at the end of the file too
-		if p.currentPosting != nil {
-			p.currentTransaction.addPosting(*p.currentPosting)
-		}
-		p.currentTransaction.close()
-		p.transactions = append(p.transactions, p.currentTransaction)
+	if p.currentTransaction == nil {
+		return
 	}
+
+	// Make sure we add the last open posting
+	// TODO: do this at the end of the file too
+	if p.currentPosting != nil {
+		p.currentTransaction.addPosting(p.currentPosting)
+	}
+	p.currentTransaction.close()
+	p.journal.transactions = append(p.journal.transactions, p.currentTransaction)
 }

@@ -12,7 +12,7 @@ func _() {
 	_ = x[tState-1]
 	_ = x[tPayee-2]
 	_ = x[tAccount-3]
-	_ = x[tCurrency-4]
+	_ = x[tCommodity-4]
 	_ = x[tAmount-5]
 	_ = x[tComment-6]
 }

@@ -1,18 +1,19 @@
 package main
 
 type posting struct {
-	comments []string
-	account  string
-	currency interface{}
-	// TODO: represent as a struct with two int fields
-	amount interface{}
+	// id            uuid.UUID // Identifier for the posting
+	transaction *transaction // The transaction this posting belongs to
+	comments    []string     // Any comments attached to the posting
+	account     *account     // The account this posting relates to
+	amount      *amount
 }
 
-func newPosting(comments []string, account string, currency interface{}, amount interface{}) *posting {
+func newPosting() *posting {
 	return &posting{
-		comments,
-		account,
-		currency,
-		amount,
+		// id:            uuid.Nil,
+		transaction: nil,
+		comments:    make([]string, 0),
+		account:     nil,
+		amount:      nil,
 	}
 }

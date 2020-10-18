@@ -19,7 +19,7 @@ const (
 	tState
 	tPayee
 	tAccount
-	tCurrency
+	tCommodity
 	tAmount
 	tComment
 )
@@ -154,11 +154,13 @@ func (l *lexer) lexPostingLine() {
 		// Lex the currency
 		currency := l.lexCurrency()
 		fmt.Println("\tlexed currency:", string(currency))
+		l.parser.parseItem(tCommodity, currency)
 		l.consumeSpace()
 
 		// Lex the amount
 		amount := l.takeToNextLineOrComment()
 		fmt.Println("\tlexed amount:", string(amount))
+		l.parser.parseItem(tAmount, amount)
 
 		return
 	}

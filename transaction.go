@@ -20,19 +20,25 @@ type transaction struct {
 	state                     transactionState
 	payee                     string
 	postingsWithElidedAmounts int
-	postings                  []posting
+	postings                  []*posting
 }
 
 func newTransaction() *transaction {
-	return &transaction{}
+	return &transaction{
+		date:                      time.Time{},
+		state:                     tNoState,
+		payee:                     "",
+		postingsWithElidedAmounts: 0,
+		postings:                  make([]*posting, 0, 8),
+	}
 }
 
 func (t transaction) String() string {
 	return fmt.Sprintf("Transaction:\n\t%s\n\t%s\n\t%s\n\t%d postings (%d)", t.date, t.state.String(), t.payee, len(t.postings), t.postingsWithElidedAmounts)
 }
 
-func (t *transaction) addPosting(p posting) error {
-	if _, ok := p.amount.(float32); ok {
+func (t *transaction) addPosting(p *posting) error {
+	if p.amount == nil {
 		t.postingsWithElidedAmounts++
 		if t.postingsWithElidedAmounts > 1 {
 			log.Fatalln("Cannot have more than one posting with an elided amount")
@@ -44,12 +50,12 @@ func (t *transaction) addPosting(p posting) error {
 }
 
 func (t *transaction) close() error {
-	sum := float32(0)
+	sum := int64(0)
 	for _, p := range t.postings {
-		if amount, ok := p.amount.(float32); ok {
-			sum += amount
-		} else {
+		if p.amount == nil {
 			continue
+		} else {
+			sum += p.amount.quantity
 		}
 	}
 	return nil
