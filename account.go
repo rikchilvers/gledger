@@ -1,12 +1,9 @@
 package main
 
 type account struct {
-	// The user visible name for the account
-	name string
-	// Parent account (e.g. Parent:Child)
-	parent *account
-	// All children of the account
+	name         string
 	quantity     int64
+	parent       *account
 	children     []*account
 	postings     []*posting
 	transactions []*transaction
