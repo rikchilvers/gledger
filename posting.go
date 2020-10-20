@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 type posting struct {
 	// id            uuid.UUID // Identifier for the posting
 	transaction *transaction // The transaction this posting belongs to
@@ -16,4 +18,8 @@ func newPosting() *posting {
 		account:     nil,
 		amount:      nil,
 	}
+}
+
+func (p posting) String() string {
+	return fmt.Sprintf("%s  %s", p.account.name, p.amount.displayableQuantity(true))
 }

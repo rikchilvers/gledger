@@ -46,8 +46,7 @@ func (p *parser) parse(r io.Reader) {
 func (p *parser) parseItem(t itemType, content []rune) {
 	switch t {
 	case tDate:
-		// This will start a transaction
-		// Check if we need to close a previous one
+		// This will start a transaction so check if we need to close a previous one
 		p.endTransaction()
 		p.currentTransaction = newTransaction()
 		p.currentPosting = nil
@@ -88,6 +87,7 @@ func (p *parser) parseItem(t itemType, content []rune) {
 		}
 		p.currentPosting = newPosting()
 
+		p.currentPosting.transaction = p.currentTransaction
 		p.currentPosting.account = newAccount(strings.TrimSpace(string(content)))
 	case tCommodity:
 		if p.previousItemType != tAccount {
@@ -95,7 +95,7 @@ func (p *parser) parseItem(t itemType, content []rune) {
 		}
 
 		if p.currentPosting.amount == nil {
-			p.currentPosting.amount = newAmount()
+			p.currentPosting.amount = newAmount(0)
 		}
 
 		p.currentPosting.amount.commodity = strings.TrimSpace(string(content))
@@ -105,48 +105,53 @@ func (p *parser) parseItem(t itemType, content []rune) {
 		}
 
 		if p.currentPosting.amount == nil {
-			p.currentPosting.amount = newAmount()
-		}
-		// Handle signs
-		firstRune := content[0]
-		var multiplier int64
-		if firstRune == '+' {
-			multiplier = 1
-			content = content[1:]
-		} else if firstRune == '-' {
-			multiplier = -1
-			content = content[1:]
-		} else {
-			multiplier = 1
+			p.currentPosting.amount = newAmount(0)
 		}
 
-		// Find out if we have a decimal number
-		decimalPosition := -1
-		for i, r := range content {
-			if r == '.' {
-				decimalPosition = i
-				break
-			}
-		}
-
-		// Find whole and decimal
-		var whole int64
-		var decimal int64
-		if decimalPosition == -1 {
-			// TODO: consider https://stackoverflow.com/a/29255836
-			whole, _ = strconv.ParseInt(string(content), 10, 64)
-			decimal = 0
-		} else {
-			whole, _ = strconv.ParseInt(string(content[:decimalPosition]), 10, 64)
-			decimal, _ = strconv.ParseInt(string(content[decimalPosition+1:]), 10, 64)
-		}
-
-		p.currentPosting.amount.quantity = multiplier * (whole*100 + decimal)
+		p.parseAmount(content)
 	default:
 		fmt.Println("Unhandled itemType", p.previousItemType)
 	}
 
 	p.previousItemType = t
+}
+
+func (p *parser) parseAmount(content []rune) {
+	// Handle signs
+	firstRune := content[0]
+	var multiplier int64
+	if firstRune == '+' {
+		multiplier = 1
+		content = content[1:]
+	} else if firstRune == '-' {
+		multiplier = -1
+		content = content[1:]
+	} else {
+		multiplier = 1
+	}
+
+	// Find out if we have a decimal number
+	decimalPosition := -1
+	for i, r := range content {
+		if r == '.' {
+			decimalPosition = i
+			break
+		}
+	}
+
+	// Find whole and decimal
+	var whole int64
+	var decimal int64
+	if decimalPosition == -1 {
+		// TODO: consider https://stackoverflow.com/a/29255836
+		whole, _ = strconv.ParseInt(string(content), 10, 64)
+		decimal = 0
+	} else {
+		whole, _ = strconv.ParseInt(string(content[:decimalPosition]), 10, 64)
+		decimal, _ = strconv.ParseInt(string(content[decimalPosition+1:]), 10, 64)
+	}
+
+	p.currentPosting.amount.quantity = multiplier * (whole*100 + decimal)
 }
 
 func (p *parser) endTransaction() {
@@ -155,10 +160,10 @@ func (p *parser) endTransaction() {
 	}
 
 	// Make sure we add the last open posting
-	// TODO: do this at the end of the file too
 	if p.currentPosting != nil {
 		p.currentTransaction.addPosting(p.currentPosting)
 	}
 	p.currentTransaction.close()
+
 	p.journal.transactions = append(p.journal.transactions, p.currentTransaction)
 }

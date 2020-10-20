@@ -16,40 +16,57 @@ const (
 )
 
 type transaction struct {
-	date                      time.Time
-	state                     transactionState
-	payee                     string
-	postingsWithElidedAmounts int
-	postings                  []*posting
+	date                    time.Time
+	state                   transactionState
+	payee                   string
+	postingWithElidedAmount *posting
+	postings                []*posting
 }
 
 func newTransaction() *transaction {
 	return &transaction{
-		date:                      time.Time{},
-		state:                     tNoState,
-		payee:                     "",
-		postingsWithElidedAmounts: 0,
-		postings:                  make([]*posting, 0, 8),
+		date:                    time.Time{},
+		state:                   tNoState,
+		payee:                   "",
+		postingWithElidedAmount: nil,
+		postings:                make([]*posting, 0, 8),
 	}
 }
 
 func (t transaction) String() string {
-	return fmt.Sprintf("Transaction:\n\t%s\n\t%s\n\t%s\n\t%d postings (%d)", t.date, t.state.String(), t.payee, len(t.postings), t.postingsWithElidedAmounts)
+	// return fmt.Sprintf("Transaction:\n\t%s\n\t%s\n\t%s\n\t%d postings (%v)", t.date, t.state.String(), t.payee, len(t.postings), t.postingWithElidedAmount != nil)
+	ts := fmt.Sprintf(`	Transaction:
+		%s
+		%s
+		%s
+		%d postings (%v)`, t.date, t.state.String(), t.payee, len(t.postings), t.postingWithElidedAmount != nil)
+	for _, p := range t.postings {
+		ts = fmt.Sprintf("%s\n\t\t\t%s", ts, p)
+	}
+	return ts
 }
 
 func (t *transaction) addPosting(p *posting) error {
 	if p.amount == nil {
-		t.postingsWithElidedAmounts++
-		if t.postingsWithElidedAmounts > 1 {
-			log.Fatalln("Cannot have more than one posting with an elided amount")
+		if t.postingWithElidedAmount != nil {
+			log.Fatalln("Cannot have more than one posting with an elided amount\n", t)
 		}
+		t.postingWithElidedAmount = p
 	}
+
+	// TODO: during parsing, check amounts with commodities cannot be created without amounts
+
 	t.postings = append(t.postings, p)
+
+	// Tie up references
+	p.account.postings = append(p.account.postings, p)
+	p.account.transactions = append(p.account.transactions, t)
 
 	return nil
 }
 
 func (t *transaction) close() error {
+	// Check the transaction balances
 	sum := int64(0)
 	for _, p := range t.postings {
 		if p.amount == nil {
@@ -58,5 +75,13 @@ func (t *transaction) close() error {
 			sum += p.amount.quantity
 		}
 	}
+
+	if sum != 0 {
+		if t.postingWithElidedAmount == nil {
+			log.Fatalln("Transaction does not balance\n", t)
+		}
+		t.postingWithElidedAmount.amount = newAmount(-sum)
+	}
+
 	return nil
 }
