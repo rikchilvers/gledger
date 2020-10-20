@@ -151,11 +151,13 @@ func (l *lexer) lexPosting() {
 			return
 		}
 
-		// Lex the currency
-		currency := l.lexCurrency()
-		fmt.Println("\tlexed currency:", string(currency))
-		l.parser.parseItem(tCommodity, currency)
-		l.consumeSpace()
+		// Lex the commodity
+		commodity := l.lexCommodity()
+		fmt.Println("\tlexed commodity:", string(commodity))
+		if l.consumeSpace() > 0 {
+			commodity = append(commodity, ' ')
+		}
+		l.parser.parseItem(tCommodity, commodity)
 
 		// Lex the amount
 		amount := l.takeToNextLineOrComment()
@@ -170,7 +172,7 @@ func (l *lexer) lexPosting() {
 }
 
 // Takes until a number or a space
-func (l *lexer) lexCurrency() []rune {
+func (l *lexer) lexCommodity() []rune {
 	runes := make([]rune, 0, runeBufferCapacity)
 	for {
 		r := l.next()
@@ -184,6 +186,7 @@ func (l *lexer) lexCurrency() []rune {
 		}
 
 		if r == ' ' || r == '\t' {
+			l.backup()
 			return runes
 		}
 

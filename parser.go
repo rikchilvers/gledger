@@ -88,6 +88,7 @@ func (p *parser) parseItem(t itemType, content []rune) {
 		p.currentPosting = newPosting()
 
 		p.currentPosting.transaction = p.currentTransaction
+		// TODO: try to remove necessity of TrimSpace everywhere
 		p.currentPosting.account = newAccount(strings.TrimSpace(string(content)))
 	case tCommodity:
 		if p.previousItemType != tAccount {
@@ -98,7 +99,7 @@ func (p *parser) parseItem(t itemType, content []rune) {
 			p.currentPosting.amount = newAmount(0)
 		}
 
-		p.currentPosting.amount.commodity = strings.TrimSpace(string(content))
+		p.currentPosting.amount.commodity = string(content)
 	case tAmount:
 		if p.previousItemType != tCommodity && p.previousItemType != tPayee {
 			log.Fatalln("Unexpected amount", p.previousItemType)
