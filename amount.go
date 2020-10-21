@@ -19,8 +19,11 @@ func newAmount(q int64) *amount {
 
 func (a amount) displayableQuantity(withCommodity bool) string {
 	q := strconv.FormatInt(a.quantity, 10)
-	amount := fmt.Sprintf("%s.%s", q[:2], q[len(q)-2:])
-	// amount := fmt.Sprintf("%d", a.quantity)
+	offset := 2
+	if a.quantity < 0 {
+		offset = 3
+	}
+	amount := fmt.Sprintf("%s.%s", q[:offset], q[len(q)-2:])
 	if withCommodity {
 		amount = fmt.Sprintf("%s%s", a.commodity, amount)
 	}
