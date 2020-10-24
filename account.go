@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type account struct {
 	name         string
@@ -40,6 +43,36 @@ func newAccount(name string) *account {
 		postings:     make([]*posting, 0, 2048),
 		transactions: make([]*transaction, 0, 1024),
 	}
+}
+
+// Adds descending child accounts to a parent
+func newAccountWithChildren(components []string, start *account) *account {
+	for {
+		if len(components) == 0 {
+			return start
+		}
+
+		a := newAccount(components[0])
+		if start != nil {
+			start.addChild(a)
+		}
+		start = a
+		components = components[1:]
+	}
+}
+
+func (a account) findOrCreateAccount(name string) *account {
+	components := strings.Split(name, ":")
+	deepest, remaining := a.findChildAndDescend(components)
+
+	// If there were no remaining accounts, we found the deepest
+	if remaining == nil {
+		fmt.Println("found deepest:", deepest.name)
+		return deepest
+	}
+
+	// Otherwise, add a child to the root account
+	return newAccountWithChildren(remaining, deepest)
 }
 
 // Returns the deepest account found and any remaining components

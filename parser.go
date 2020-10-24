@@ -89,7 +89,7 @@ func (p *parser) parseItem(t itemType, content []rune) {
 
 		p.currentPosting.transaction = p.currentTransaction
 		// TODO: try to remove necessity of TrimSpace everywhere
-		p.currentPosting.account = p.journal.findOrCreateAccount(strings.TrimSpace(string(content)))
+		p.currentPosting.account = p.journal.rootAccount.findOrCreateAccount(strings.TrimSpace(string(content)))
 	case tCommodity:
 		if p.previousItemType != tAccount {
 			log.Fatalln("Unexpected currency", p.previousItemType)
