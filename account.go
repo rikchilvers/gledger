@@ -12,21 +12,23 @@ type account struct {
 }
 
 func (a account) String() string {
-	n := a.asString(0)
-	i := 0
-	for _, c := range a.children {
-		n = fmt.Sprintf("%s\n%s", n, c.asString(i+1))
-		i++
-	}
-	return fmt.Sprintf("%s\n", n)
+	return a.asString(0)
 }
 
+// Includes children
 func (a account) asString(level int) string {
-	n := fmt.Sprintf(a.name)
-	for i := 0; i < level; i++ {
-		n = fmt.Sprintf("\t%s", n)
+	// Print the name of this account at the specified level
+	s := fmt.Sprintf("%s", a.name)
+	for i := 0; i < level*tabWidth; i++ {
+		s = fmt.Sprintf(" %s", s)
 	}
-	return n
+
+	// Print the name of this account's children at the next level
+	for _, c := range a.children {
+		s = fmt.Sprintf("%s\n%s", s, c.asString(level+1))
+	}
+
+	return s
 }
 
 func newAccount(name string) *account {
