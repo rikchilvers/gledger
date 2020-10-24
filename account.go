@@ -46,17 +46,17 @@ func newAccount(name string) *account {
 }
 
 // Adds descending child accounts to a parent
-func newAccountWithChildren(components []string, start *account) *account {
+func newAccountWithChildren(components []string, parent *account) *account {
 	for {
 		if len(components) == 0 {
-			return start
+			return parent
 		}
 
 		a := newAccount(components[0])
-		if start != nil {
-			start.addChild(a)
+		if parent != nil {
+			parent.addChild(a)
 		}
-		start = a
+		parent = a
 		components = components[1:]
 	}
 }
