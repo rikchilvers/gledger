@@ -47,32 +47,6 @@ func (a account) path() string {
 	}
 }
 
-func (a account) pathComponents() []string {
-	components := make([]string, 0, 10)
-	current := a
-	for {
-		if current.parent == nil {
-			break
-		}
-		components = append(components, current.parent.name)
-		current = *current.parent
-	}
-	return reverse(components)
-}
-
-// From https://stackoverflow.com/a/61218109
-func reverse(s []string) []string {
-	a := make([]string, len(s))
-	copy(a, s)
-
-	for i := len(a)/2 - 1; i >= 0; i-- {
-		opp := len(a) - 1 - i
-		a[i], a[opp] = a[opp], a[i]
-	}
-
-	return a
-}
-
 func newAccount(name string) *account {
 	return &account{
 		name:         name,
