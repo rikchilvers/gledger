@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -74,5 +75,17 @@ func TestAccountPathGeneration(t *testing.T) {
 
 	if account.path() != "assets:current" {
 		t.Fatalf("account generates incorrect path")
+	}
+}
+
+func TestAccountPrinting(t *testing.T) {
+	components := []string{"assets", "my savings account "}
+	account := newAccountWithChildren(components, nil)
+
+	result := fmt.Sprintf("%s", account.parent)
+	expected := "assets\n  my savings account "
+
+	if result != expected {
+		t.Fatalf("account printing does not work\n\texpected %s\nbut got %s", expected, result)
 	}
 }

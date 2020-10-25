@@ -19,7 +19,6 @@ func (a account) String() string {
 
 // Includes children
 func (a account) asString(level int) string {
-	fmt.Println(a.path())
 	// Print the name of this account at the specified level
 	s := fmt.Sprintf("%s", a.name)
 	for i := 0; i < level*tabWidth; i++ {
