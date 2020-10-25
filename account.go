@@ -39,7 +39,6 @@ func (a account) path() string {
 	current := a
 	for {
 		if current.parent == nil {
-			fmt.Printf("parent of %s is nil\n", path)
 			return path
 		}
 		path = fmt.Sprintf("%s:%s", current.parent.name, path)
@@ -67,7 +66,8 @@ func newAccountWithChildren(components []string, parent *account) *account {
 
 		a := newAccount(components[0])
 		if parent != nil {
-			parent.addChild(a)
+			a.parent = parent
+			parent.children[a.name] = a
 		}
 		parent = a
 		components = components[1:]
@@ -97,19 +97,4 @@ func (a account) findChildAndDescend(components []string) (*account, []string) {
 	}
 	// There are remaining components so return those and the deepest parent
 	return &a, components
-}
-
-func (a account) findChild(name string) *account {
-	if account, found := a.children[name]; found {
-		return account
-	}
-	return nil
-}
-
-func (a *account) addChild(account *account) {
-	if _, found := a.children[account.name]; found {
-		return
-	}
-
-	a.children[account.name] = account
 }
