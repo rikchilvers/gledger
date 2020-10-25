@@ -3,10 +3,10 @@ package main
 import "fmt"
 
 type posting struct {
-	// id            uuid.UUID // Identifier for the posting
 	transaction *transaction // The transaction this posting belongs to
 	comments    []string     // Any comments attached to the posting
 	account     *account     // The account this posting relates to
+	accountPath []string     // The : delimited path to the above account
 	amount      *amount
 }
 
@@ -16,6 +16,7 @@ func newPosting() *posting {
 		transaction: nil,
 		comments:    make([]string, 0),
 		account:     nil,
+		accountPath: make([]string, 5),
 		amount:      nil,
 	}
 }

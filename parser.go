@@ -88,9 +88,11 @@ func (p *parser) parseItem(t itemType, content []rune) {
 		p.currentPosting = newPosting()
 
 		p.currentPosting.transaction = p.currentTransaction
+
 		// TODO: try to remove necessity of TrimSpace everywhere
-		a := strings.TrimSpace(string(content))
-		p.currentPosting.account = newAccountWithChildren(strings.Split(a, ":"), nil)
+		// a := strings.TrimSpace(string(content))
+		// p.currentPosting.account = newAccountWithChildren(strings.Split(a, ":"), nil)
+		p.currentPosting.accountPath = strings.Split(strings.TrimSpace(string(content)), ":")
 	case tCommodity:
 		if p.previousItemType != tAccount {
 			log.Fatalln("Unexpected currency", p.previousItemType)
