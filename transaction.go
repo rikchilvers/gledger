@@ -35,13 +35,13 @@ func newTransaction() *transaction {
 
 func (t transaction) String() string {
 	// return fmt.Sprintf("Transaction:\n\t%s\n\t%s\n\t%s\n\t%d postings (%v)", t.date, t.state.String(), t.payee, len(t.postings), t.postingWithElidedAmount != nil)
-	ts := fmt.Sprintf(`	Transaction:
-		%s
-		%s
-		%s
-		%d postings (%v)`, t.date, t.state.String(), t.payee, len(t.postings), t.postingWithElidedAmount != nil)
+	ts := fmt.Sprintf(`Transaction:
+	%s
+	%s
+	%s
+	%d postings (%v)`, t.date, t.state.String(), t.payee, len(t.postings), t.postingWithElidedAmount != nil)
 	for _, p := range t.postings {
-		ts = fmt.Sprintf("%s\n\t\t\t%s", ts, p)
+		ts = fmt.Sprintf("%s\n\t\t%s", ts, p)
 	}
 	return ts
 }
@@ -57,10 +57,6 @@ func (t *transaction) addPosting(p *posting) error {
 	// TODO: during parsing, check amounts with commodities cannot be created without amounts
 
 	t.postings = append(t.postings, p)
-
-	// Tie up references
-	p.account.postings = append(p.account.postings, p)
-	p.account.transactions = append(p.account.transactions, t)
 
 	return nil
 }

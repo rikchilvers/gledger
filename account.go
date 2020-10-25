@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
-	"strings"
 )
 
 type account struct {
 	name         string
-	quantity     int64
+	amount       *amount
 	parent       *account
 	children     map[string]*account
 	postings     []*posting
@@ -20,6 +19,7 @@ func (a account) String() string {
 
 // Includes children
 func (a account) asString(level int) string {
+	fmt.Println(a.path())
 	// Print the name of this account at the specified level
 	s := fmt.Sprintf("%s", a.name)
 	for i := 0; i < level*tabWidth; i++ {
@@ -34,10 +34,49 @@ func (a account) asString(level int) string {
 	return s
 }
 
+func (a account) path() string {
+	path := a.name
+	current := a
+	for {
+		if current.parent == nil {
+			fmt.Printf("parent of %s is nil\n", path)
+			return path
+		}
+		path = fmt.Sprintf("%s:%s", current.parent.name, path)
+		current = *current.parent
+	}
+}
+
+func (a account) pathComponents() []string {
+	components := make([]string, 0, 10)
+	current := a
+	for {
+		if current.parent == nil {
+			break
+		}
+		components = append(components, current.parent.name)
+		current = *current.parent
+	}
+	return reverse(components)
+}
+
+// From https://stackoverflow.com/a/61218109
+func reverse(s []string) []string {
+	a := make([]string, len(s))
+	copy(a, s)
+
+	for i := len(a)/2 - 1; i >= 0; i-- {
+		opp := len(a) - 1 - i
+		a[i], a[opp] = a[opp], a[i]
+	}
+
+	return a
+}
+
 func newAccount(name string) *account {
 	return &account{
 		name:         name,
-		quantity:     0,
+		amount:       newAmount(0),
 		parent:       nil,
 		children:     make(map[string]*account),
 		postings:     make([]*posting, 0, 2048),
@@ -61,13 +100,11 @@ func newAccountWithChildren(components []string, parent *account) *account {
 	}
 }
 
-func (a account) findOrCreateAccount(name string) *account {
-	components := strings.Split(name, ":")
+func (a account) findOrCreateAccount(components []string) *account {
 	deepest, remaining := a.findChildAndDescend(components)
 
 	// If there were no remaining accounts, we found the deepest
 	if remaining == nil {
-		fmt.Println("found deepest:", deepest.name)
 		return deepest
 	}
 
@@ -77,7 +114,6 @@ func (a account) findOrCreateAccount(name string) *account {
 
 // Returns the deepest account found and any remaining components
 func (a account) findChildAndDescend(components []string) (*account, []string) {
-	fmt.Printf(">>>\nlooking for %s on %s\n\n", components[0], a.name)
 	if account, found := a.children[components[0]]; found {
 		if len(components) > 1 {
 			return account.findChildAndDescend(components[1:])
