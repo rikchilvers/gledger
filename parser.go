@@ -9,9 +9,6 @@ import (
 	"time"
 )
 
-// The date format journal files use
-const DateFormat string = "2006-01-02"
-
 type journalParser interface {
 	parseItem(t itemType, content []rune)
 }
@@ -55,11 +52,7 @@ func (p *parser) parseItem(t itemType, content []rune) {
 		p.currentTransaction = newTransaction()
 		p.currentPosting = nil
 
-		date, err := time.Parse(DateFormat, string(content))
-		if err != nil {
-			log.Fatalln(err)
-		}
-		p.currentTransaction.date = date
+		p.currentTransaction.date = parseDate(content)
 	case tState:
 		if p.previousItemType != tDate {
 			log.Fatalln("Unexpected state", p.previousItemType)
@@ -122,6 +115,32 @@ func (p *parser) parseItem(t itemType, content []rune) {
 	}
 
 	p.previousItemType = t
+}
+
+func parseDate(content []rune) time.Time {
+	const DashDateFormat string = "2006-01-02"
+	const DotDateFormat string = "2006.01.02"
+	const SlashDateFormat string = "2006/01/02"
+
+	var date time.Time
+	var err error
+
+	switch content[4] {
+	case '-':
+		date, err = time.Parse(DashDateFormat, string(content))
+	case '.':
+		date, err = time.Parse(DotDateFormat, string(content))
+	case '/':
+		date, err = time.Parse(SlashDateFormat, string(content))
+	default:
+		log.Fatalln("Malformed date")
+	}
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return date
 }
 
 func (p *parser) parseAmount(content []rune) {
