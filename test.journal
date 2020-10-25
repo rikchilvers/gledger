@@ -3,8 +3,8 @@
 ; This is a comment
 ; This is another comment
 2020-10-10 * Grocery store  ; Weekly shop
-    Assets:Cash  £-42.81
-    Expenses:Immediate Obligations:Groceries    £42.81
+    Assets:Cash  £-40
+    Expenses:Immediate Obligations:Groceries    £40
 
 
 2020-10-11 A restaurant
@@ -14,4 +14,4 @@
 
 2020-10-11 ! Clothes store  ; new shoes
     Assets:Current
-    Expenses:Life:Clothing    £20.05
+    Expenses:Life:Clothing    £20.00
