@@ -88,7 +88,7 @@ func (a account) findOrCreateAccount(components []string) *account {
 
 // Returns the deepest account found and any remaining components
 func (a account) findChildAndDescend(components []string) (*account, []string) {
-	if account, found := a.children[components[0]]; found {
+	if account, didFind := a.children[components[0]]; didFind {
 		if len(components) > 1 {
 			return account.findChildAndDescend(components[1:])
 		}
