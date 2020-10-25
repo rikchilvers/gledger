@@ -1,16 +1,16 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
-	"log"
 	"strconv"
 	"strings"
 	"time"
 )
 
 type journalParser interface {
-	parseItem(t itemType, content []rune, line int)
+	parseItem(t itemType, content []rune, line int) error
 }
 
 type parser struct {
@@ -44,7 +44,9 @@ func (p *parser) parse(r io.Reader) {
 	}
 }
 
-func (p *parser) parseItem(t itemType, content []rune, line int) {
+func (p *parser) parseItem(t itemType, content []rune, line int) error {
+	var err error
+
 	switch t {
 	case tDate:
 		// This will start a transaction so check if we need to close a previous one
@@ -52,10 +54,13 @@ func (p *parser) parseItem(t itemType, content []rune, line int) {
 		p.currentTransaction = newTransaction()
 		p.currentPosting = nil
 
-		p.currentTransaction.date = parseDate(content)
+		p.currentTransaction.date, err = parseDate(content)
+		if err != nil {
+			return fmt.Errorf("error parsing date: %w", err)
+		}
 	case tState:
 		if p.previousItemType != tDate {
-			log.Fatalln("Unexpected state", p.previousItemType)
+			return errors.New(fmt.Sprintf("expected state but got", p.previousItemType))
 		}
 
 		switch content[0] {
@@ -68,13 +73,13 @@ func (p *parser) parseItem(t itemType, content []rune, line int) {
 		}
 	case tPayee:
 		if p.previousItemType != tDate && p.previousItemType != tState {
-			log.Fatalln("Unexpected payee", p.previousItemType)
+			return errors.New(fmt.Sprintf("expected payee but got", p.previousItemType))
 		}
 
 		p.currentTransaction.payee = strings.TrimSpace(string(content))
 	case tAccount:
 		if p.previousItemType != tPayee && p.previousItemType != tAmount && p.previousItemType != tAccount {
-			log.Fatalln("Unexpected account", p.previousItemType)
+			return errors.New(fmt.Sprintf("expected account but go", p.previousItemType))
 		}
 
 		// Accounts start a posting, so check if we need to start a new one
@@ -92,7 +97,7 @@ func (p *parser) parseItem(t itemType, content []rune, line int) {
 		p.currentPosting.accountPath = strings.Split(strings.TrimSpace(string(content)), ":")
 	case tCommodity:
 		if p.previousItemType != tAccount {
-			log.Fatalln("Unexpected currency", p.previousItemType)
+			return errors.New(fmt.Sprintf("expected currency but got", p.previousItemType))
 		}
 
 		if p.currentPosting.amount == nil {
@@ -102,48 +107,53 @@ func (p *parser) parseItem(t itemType, content []rune, line int) {
 		p.currentPosting.amount.commodity = string(content)
 	case tAmount:
 		if p.previousItemType != tCommodity && p.previousItemType != tPayee {
-			log.Fatalln("Unexpected amount", p.previousItemType)
+			return errors.New(fmt.Sprintf("expected amount but got", p.previousItemType))
 		}
 
 		if p.currentPosting.amount == nil {
 			p.currentPosting.amount = newAmount(0)
 		}
 
-		p.parseAmount(content)
+		err = p.parseAmount(content)
+		if err != nil {
+			return fmt.Errorf("error parsing amount: %w", err)
+		}
 	default:
-		fmt.Println("Unhandled itemType", p.previousItemType)
+		return errors.New(fmt.Sprintf("Unhandled itemType", p.previousItemType))
 	}
 
 	p.previousItemType = t
+	return nil
 }
 
-func parseDate(content []rune) time.Time {
+func parseDate(content []rune) (time.Time, error) {
 	const DashDateFormat string = "2006-01-02"
 	const DotDateFormat string = "2006.01.02"
 	const SlashDateFormat string = "2006/01/02"
 
+	s := string(content)
 	var date time.Time
 	var err error
 
 	switch content[4] {
 	case '-':
-		date, err = time.Parse(DashDateFormat, string(content))
+		date, err = time.Parse(DashDateFormat, s)
 	case '.':
-		date, err = time.Parse(DotDateFormat, string(content))
+		date, err = time.Parse(DotDateFormat, s)
 	case '/':
-		date, err = time.Parse(SlashDateFormat, string(content))
+		date, err = time.Parse(SlashDateFormat, s)
 	default:
-		log.Fatalln("Malformed date")
+		return time.Time{}, errors.New(fmt.Sprintf("could not parse malformed date: %s", s))
 	}
 
 	if err != nil {
-		log.Fatalln(err)
+		return time.Time{}, err
 	}
 
-	return date
+	return date, nil
 }
 
-func (p *parser) parseAmount(content []rune) {
+func (p *parser) parseAmount(content []rune) error {
 	// Handle signs
 	firstRune := content[0]
 	var multiplier int64
@@ -169,16 +179,23 @@ func (p *parser) parseAmount(content []rune) {
 	// Find whole and decimal
 	var whole int64
 	var decimal int64
+	var err error
 	if decimalPosition == -1 {
 		// TODO: consider https://stackoverflow.com/a/29255836
-		whole, _ = strconv.ParseInt(string(content), 10, 64)
+		whole, err = strconv.ParseInt(string(content), 10, 64)
 		decimal = 0
 	} else {
-		whole, _ = strconv.ParseInt(string(content[:decimalPosition]), 10, 64)
-		decimal, _ = strconv.ParseInt(string(content[decimalPosition+1:]), 10, 64)
+		whole, err = strconv.ParseInt(string(content[:decimalPosition]), 10, 64)
+		decimal, err = strconv.ParseInt(string(content[decimalPosition+1:]), 10, 64)
+	}
+
+	if err != nil {
+		return err
 	}
 
 	p.currentPosting.amount.quantity = multiplier * (whole*100 + decimal)
+
+	return nil
 }
 
 func (p *parser) endTransaction() {
