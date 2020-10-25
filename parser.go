@@ -12,6 +12,10 @@ import (
 // The date format journal files use
 const DateFormat string = "2006-01-02"
 
+type journalParser interface {
+	parseItem(t itemType, content []rune)
+}
+
 type parser struct {
 	previousItemType   itemType
 	currentPosting     *posting

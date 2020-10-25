@@ -34,7 +34,7 @@ type lexer struct {
 	pos    int // input position
 	start  int // item start position
 	width  int // width of last element
-	parser *parser
+	parser journalParser
 }
 
 // Lexes the file line by line
