@@ -10,7 +10,7 @@ import (
 )
 
 type journalParser interface {
-	parseItem(t itemType, content []rune)
+	parseItem(t itemType, content []rune, line int)
 }
 
 type parser struct {
@@ -44,7 +44,7 @@ func (p *parser) parse(r io.Reader) {
 	}
 }
 
-func (p *parser) parseItem(t itemType, content []rune) {
+func (p *parser) parseItem(t itemType, content []rune, line int) {
 	switch t {
 	case tDate:
 		// This will start a transaction so check if we need to close a previous one

@@ -29,19 +29,20 @@ const tabWidth = 2 // size of a tab in spaces
 const runeBufferCapacity = 256
 
 type lexer struct {
-	reader *bufio.Reader
-	input  []byte
-	pos    int // input position
-	start  int // item start position
-	width  int // width of last element
-	parser journalParser
+	reader      *bufio.Reader
+	input       []byte
+	currentLine int
+	pos         int // input position
+	start       int // item start position
+	width       int // width of last element
+	parser      journalParser
 }
 
 // Lexes the file line by line
 func (l *lexer) lex(r io.Reader) {
 	l.reader = bufio.NewReader(r)
 
-	count := 1
+	l.currentLine = 1
 	for {
 		line, isPrefix, err := l.reader.ReadLine()
 		if err != nil {
@@ -54,7 +55,7 @@ func (l *lexer) lex(r io.Reader) {
 			log.Fatalln("Unhandled split line")
 		}
 
-		fmt.Printf("Line %2d\n", count)
+		fmt.Printf("Line %2d\n", l.currentLine)
 		// Reset the positions
 		l.pos = 0
 		l.start = 0
@@ -62,7 +63,7 @@ func (l *lexer) lex(r io.Reader) {
 
 		l.input = line
 		l.lexLine()
-		count++
+		l.currentLine++
 	}
 }
 
@@ -88,7 +89,7 @@ func (l *lexer) lexLine() {
 	}
 
 	// Detect posting lines
-	if firstRune == '\t' || firstRune == ' ' && secondRune == ' ' {
+	if firstRune == '\t' || (firstRune == ' ' && secondRune == ' ') {
 		fmt.Println("\tposting line")
 		l.lexPosting()
 		return
@@ -103,17 +104,17 @@ func (l *lexer) lexTransactionHeader() {
 
 	date := l.takeUntilSpace()
 	fmt.Println("\tlexed date:", string(date))
-	l.parser.parseItem(tDate, date)
+	l.parser.parseItem(tDate, date, l.currentLine)
 
 	l.consumeSpace()
 	next := l.next()
 	if next == '!' {
 		fmt.Println("\tlexed state:", "!")
-		l.parser.parseItem(tState, []rune{'!'})
+		l.parser.parseItem(tState, []rune{'!'}, l.currentLine)
 		l.consumeSpace()
 	} else if next == '*' {
 		fmt.Println("\tlexed state:", "*")
-		l.parser.parseItem(tState, []rune{'*'})
+		l.parser.parseItem(tState, []rune{'*'}, l.currentLine)
 		l.consumeSpace()
 	} else {
 		l.backup()
@@ -121,7 +122,7 @@ func (l *lexer) lexTransactionHeader() {
 
 	payee := l.takeToNextLineOrComment()
 	fmt.Println("\tlexed payee:", string(payee))
-	l.parser.parseItem(tPayee, payee)
+	l.parser.parseItem(tPayee, payee, l.currentLine)
 }
 
 func (l *lexer) lexPosting() {
@@ -141,7 +142,7 @@ func (l *lexer) lexPosting() {
 		l.backup()
 		account := l.takeUntilMoreThanOneSpace()
 		fmt.Println("\tlexed account:", string(account))
-		l.parser.parseItem(tAccount, account)
+		l.parser.parseItem(tAccount, account, l.currentLine)
 
 		// Bail if there are not enough spaces
 		if l.consumeSpace() < 2 {
@@ -157,12 +158,12 @@ func (l *lexer) lexPosting() {
 		if l.consumeSpace() > 0 {
 			commodity = append(commodity, ' ')
 		}
-		l.parser.parseItem(tCommodity, commodity)
+		l.parser.parseItem(tCommodity, commodity, l.currentLine)
 
 		// Lex the amount
 		amount := l.takeToNextLineOrComment()
 		fmt.Println("\tlexed amount:", string(amount))
-		l.parser.parseItem(tAmount, amount)
+		l.parser.parseItem(tAmount, amount, l.currentLine)
 
 		return
 	}
