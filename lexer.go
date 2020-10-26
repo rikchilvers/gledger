@@ -49,6 +49,11 @@ func (l *lexer) lex(r io.Reader) error {
 		line, isPrefix, err := l.reader.ReadLine()
 		if err != nil {
 			if err.Error() == "EOF" {
+				// Let the parser know we have reached the end of the file
+				parseError := l.parser.parseItem(tEOF, nil)
+				if parseError != nil {
+					return parseError
+				}
 				break
 			}
 			return err
@@ -82,6 +87,7 @@ func (l *lexer) lexLine() error {
 	}
 
 	firstRune := l.next()
+	// This will probably only be called during tests
 	if firstRune == eof {
 		return l.parser.parseItem(tEOF, nil)
 	}
