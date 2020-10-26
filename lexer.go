@@ -4,6 +4,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -87,6 +88,13 @@ func (l *lexer) lexLine() error {
 	}
 
 	firstRune := l.next()
+
+	// Bail if the line is a comment
+	if isCommentIndicator(firstRune) {
+		return nil
+	}
+
+	// Handle EOF
 	// This will probably only be called during tests
 	if firstRune == eof {
 		return l.parser.parseItem(tEOF, nil)
@@ -105,7 +113,7 @@ func (l *lexer) lexLine() error {
 		return l.lexPosting()
 	}
 
-	return nil
+	return errors.New("Unhandled line type for lexing")
 }
 
 func (l *lexer) lexTransactionHeader() error {
@@ -118,19 +126,22 @@ func (l *lexer) lexTransactionHeader() error {
 	l.consumeSpace()
 	next := l.next()
 	if next == '!' {
-		l.parser.parseItem(tState, []rune{'!'})
+		err = l.parser.parseItem(tState, []rune{'!'})
 		l.consumeSpace()
 	} else if next == '*' {
-		l.parser.parseItem(tState, []rune{'*'})
+		err = l.parser.parseItem(tState, []rune{'*'})
 		l.consumeSpace()
 	} else {
 		l.backup()
+	}
+	if err != nil {
+		return err
 	}
 
 	payee := l.takeToNextLineOrComment()
 	err = l.parser.parseItem(tPayee, payee)
 	if err != nil {
-		return fmt.Errorf("failed to lex transaction header: %w", err)
+		return err
 	}
 
 	return nil

@@ -41,6 +41,7 @@ func (p *parser) parse(journalPath string) error {
 
 	err = lexer.lex(file)
 	if err != nil {
+		// This is the exit point for the lexer's errors
 		return fmt.Errorf("Error at %s%w", journalPath, err)
 	}
 
