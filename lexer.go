@@ -171,7 +171,7 @@ func (l *lexer) lexPosting() error {
 		// Bail if there are not enough spaces
 		if l.consumeSpace() < 2 {
 			if len(l.input)-l.pos > 1 {
-				return fmt.Errorf("Not enough spaces following account on line", len(l.input)-l.pos, l.currentLine)
+				return errors.New("Not enough spaces following account")
 			}
 			return nil
 		}
