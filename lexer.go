@@ -4,9 +4,9 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
+	"log"
 	"unicode"
 	"unicode/utf8"
 )
@@ -54,7 +54,7 @@ func (l *lexer) lex(r io.Reader) error {
 			return err
 		}
 		if isPrefix {
-			return errors.New("Unhandled split line (r- todo)")
+			log.Fatalln("Unhandled split line (todo)")
 		}
 
 		// Reset the positions
@@ -65,7 +65,8 @@ func (l *lexer) lex(r io.Reader) error {
 		l.input = line
 		err = l.lexLine()
 		if err != nil {
-			return err
+			// Add line data and pass up the error
+			return fmt.Errorf(":%d\n%w", l.currentLine, err)
 		}
 		l.currentLine++
 	}
@@ -77,12 +78,12 @@ func (l *lexer) lex(r io.Reader) error {
 func (l *lexer) lexLine() error {
 	// Bail early if the line is empty
 	if len(l.input) == 0 {
-		return l.parser.parseItem(tEmptyLine, nil, l.currentLine)
+		return l.parser.parseItem(tEmptyLine, nil)
 	}
 
 	firstRune := l.next()
 	if firstRune == eof {
-		return l.parser.parseItem(tEOF, nil, l.currentLine)
+		return l.parser.parseItem(tEOF, nil)
 	}
 
 	// Detect transaction headers
@@ -103,7 +104,7 @@ func (l *lexer) lexLine() error {
 
 func (l *lexer) lexTransactionHeader() error {
 	date := l.takeUntilSpace()
-	err := l.parser.parseItem(tDate, date, l.currentLine)
+	err := l.parser.parseItem(tDate, date)
 	if err != nil {
 		return err
 	}
@@ -111,17 +112,17 @@ func (l *lexer) lexTransactionHeader() error {
 	l.consumeSpace()
 	next := l.next()
 	if next == '!' {
-		l.parser.parseItem(tState, []rune{'!'}, l.currentLine)
+		l.parser.parseItem(tState, []rune{'!'})
 		l.consumeSpace()
 	} else if next == '*' {
-		l.parser.parseItem(tState, []rune{'*'}, l.currentLine)
+		l.parser.parseItem(tState, []rune{'*'})
 		l.consumeSpace()
 	} else {
 		l.backup()
 	}
 
 	payee := l.takeToNextLineOrComment()
-	err = l.parser.parseItem(tPayee, payee, l.currentLine)
+	err = l.parser.parseItem(tPayee, payee)
 	if err != nil {
 		return fmt.Errorf("failed to lex transaction header: %w", err)
 	}
@@ -145,7 +146,7 @@ func (l *lexer) lexPosting() error {
 		// We need to backup otherwise we'll miss the first rune of the account
 		l.backup()
 		account := l.takeUntilMoreThanOneSpace()
-		err := l.parser.parseItem(tAccount, account, l.currentLine)
+		err := l.parser.parseItem(tAccount, account)
 		if err != nil {
 			return err
 		}
@@ -163,14 +164,14 @@ func (l *lexer) lexPosting() error {
 		if l.consumeSpace() > 0 {
 			commodity = append(commodity, ' ')
 		}
-		err = l.parser.parseItem(tCommodity, commodity, l.currentLine)
+		err = l.parser.parseItem(tCommodity, commodity)
 		if err != nil {
 			return err
 		}
 
 		// Lex the amount
 		amount := l.takeToNextLineOrComment()
-		err = l.parser.parseItem(tAmount, amount, l.currentLine)
+		err = l.parser.parseItem(tAmount, amount)
 		if err != nil {
 			return err
 		}

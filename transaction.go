@@ -1,8 +1,8 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"time"
 )
 
@@ -49,7 +49,7 @@ func (t transaction) String() string {
 func (t *transaction) addPosting(p *posting) error {
 	if p.amount == nil {
 		if t.postingWithElidedAmount != nil {
-			log.Fatalln("Cannot have more than one posting with an elided amount\n", t)
+			return errors.New(fmt.Sprintf("Cannot have more than one posting with an elided amount\n", t))
 		}
 		t.postingWithElidedAmount = p
 	}
@@ -74,7 +74,7 @@ func (t *transaction) close() error {
 
 	if sum != 0 {
 		if t.postingWithElidedAmount == nil {
-			log.Fatalln("Transaction does not balance\n", t)
+			return errors.New(fmt.Sprintf("Transaction does not balance\n", t))
 		}
 		t.postingWithElidedAmount.amount = newAmount(-sum)
 	}

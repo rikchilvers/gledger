@@ -3,14 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 )
 
 type journalParser interface {
-	parseItem(t itemType, content []rune, line int) error
+	parseItem(t itemType, content []rune) error
 }
 
 type parser struct {
@@ -29,43 +29,48 @@ func newParser() *parser {
 	}
 }
 
-func (p *parser) parse(r io.Reader) error {
+func (p *parser) parse(journalPath string) error {
+	file, err := os.Open(journalPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
 	lexer := lexer{}
 	lexer.parser = p
 
-	err := lexer.lex(r)
+	err = lexer.lex(file)
 	if err != nil {
-		return fmt.Errorf("Failed to parse <file>\n%w", err)
-	}
-
-	for _, t := range p.journal.transactions {
-		fmt.Println()
-		fmt.Println(t)
+		return fmt.Errorf("Error at %s%w", journalPath, err)
 	}
 
 	return nil
 }
 
-func (p *parser) parseItem(t itemType, content []rune, line int) error {
-	var err error
-
+func (p *parser) parseItem(t itemType, content []rune) error {
 	switch t {
 	case tEmptyLine:
-		p.endTransaction()
-		p.currentTransaction = newTransaction()
-		p.currentPosting = nil
+		err := p.endTransaction()
+		if err != nil {
+			return err
+		}
 	case tEOF:
 		// Make sure we close the final transaction
-		p.endTransaction()
+		err := p.endTransaction()
+		if err != nil {
+			return err
+		}
 	case tDate:
 		// This will start a transaction so check if we need to close a previous one
-		p.endTransaction()
+		err := p.endTransaction()
+		if err != nil {
+			return err
+		}
 		p.currentTransaction = newTransaction()
-		p.currentPosting = nil
 
 		p.currentTransaction.date, err = parseDate(content)
 		if err != nil {
-			return fmt.Errorf("Error parsing date on line %d\n%w", line, err)
+			return fmt.Errorf("Error parsing date\n%w", err)
 		}
 	case tState:
 		if p.previousItemType != tDate {
@@ -123,7 +128,7 @@ func (p *parser) parseItem(t itemType, content []rune, line int) error {
 			p.currentPosting.amount = newAmount(0)
 		}
 
-		err = p.parseAmount(content)
+		err := p.parseAmount(content)
 		if err != nil {
 			return fmt.Errorf("error parsing amount: %w", err)
 		}
@@ -207,16 +212,28 @@ func (p *parser) parseAmount(content []rune) error {
 	return nil
 }
 
-func (p *parser) endTransaction() {
+func (p *parser) endTransaction() error {
 	if p.currentTransaction == nil {
-		return
+		return nil
 	}
+
+	var err error
 
 	// Make sure we add the last open posting
 	if p.currentPosting != nil {
-		p.currentTransaction.addPosting(p.currentPosting)
+		err = p.currentTransaction.addPosting(p.currentPosting)
+		if err != nil {
+			return err
+		}
 	}
-	p.currentTransaction.close()
 
+	err = p.currentTransaction.close()
+	if err != nil {
+		return err
+	}
 	p.journal.addTransaction(p.currentTransaction)
+
+	p.currentTransaction = nil
+	p.currentPosting = nil
+	return nil
 }
