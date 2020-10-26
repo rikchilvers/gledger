@@ -4,9 +4,9 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
-	"log"
 	"unicode"
 	"unicode/utf8"
 )
@@ -15,13 +15,15 @@ import (
 type itemType int
 
 const (
-	tDate itemType = iota
+	tEmptyLine itemType = iota
+	tDate
 	tState
 	tPayee
 	tAccount
 	tCommodity
 	tAmount
 	tComment
+	tEOF
 )
 
 const eof = -1
@@ -39,7 +41,7 @@ type lexer struct {
 }
 
 // Lexes the file line by line
-func (l *lexer) lex(r io.Reader) {
+func (l *lexer) lex(r io.Reader) error {
 	l.reader = bufio.NewReader(r)
 
 	l.currentLine = 1
@@ -49,71 +51,69 @@ func (l *lexer) lex(r io.Reader) {
 			if err.Error() == "EOF" {
 				break
 			}
-			log.Fatalln("Error!", err)
+			return err
 		}
 		if isPrefix {
-			log.Fatalln("Unhandled split line")
+			return errors.New("Unhandled split line (r- todo)")
 		}
 
-		fmt.Printf("Line %2d\n", l.currentLine)
 		// Reset the positions
 		l.pos = 0
 		l.start = 0
 		l.width = 0
 
 		l.input = line
-		l.lexLine()
+		err = l.lexLine()
+		if err != nil {
+			return err
+		}
 		l.currentLine++
 	}
+
+	return nil
 }
 
 // Lex the line
-func (l *lexer) lexLine() {
+func (l *lexer) lexLine() error {
 	// Bail early if the line is empty
 	if len(l.input) == 0 {
-		return
+		return l.parser.parseItem(tEmptyLine, nil, l.currentLine)
 	}
 
 	firstRune := l.next()
 	if firstRune == eof {
-		return
+		return l.parser.parseItem(tEOF, nil, l.currentLine)
 	}
-	secondRune := l.peek()
 
 	// Detect transaction headers
 	// TODO: handle passing different transaction header indicators
 	if unicode.IsNumber(firstRune) {
-		fmt.Println(("\ttransaction header"))
-		l.lexTransactionHeader()
-		return
+		// Need to backup to include the first rune
+		l.backup()
+		return l.lexTransactionHeader()
 	}
 
 	// Detect posting lines
-	if firstRune == '\t' || (firstRune == ' ' && secondRune == ' ') {
-		fmt.Println("\tposting line")
-		l.lexPosting()
-		return
+	if firstRune == '\t' || (firstRune == ' ' && l.peek() == ' ') {
+		return l.lexPosting()
 	}
 
-	return
+	return nil
 }
 
-func (l *lexer) lexTransactionHeader() {
-	// Need to backup to include the first rune
-	l.backup()
-
+func (l *lexer) lexTransactionHeader() error {
 	date := l.takeUntilSpace()
-	fmt.Println("\tlexed date:", string(date))
-	l.parser.parseItem(tDate, date, l.currentLine)
+	err := l.parser.parseItem(tDate, date, l.currentLine)
+	if err != nil {
+		return err
+	}
 
 	l.consumeSpace()
 	next := l.next()
 	if next == '!' {
-		fmt.Println("\tlexed state:", "!")
 		l.parser.parseItem(tState, []rune{'!'}, l.currentLine)
 		l.consumeSpace()
 	} else if next == '*' {
-		fmt.Println("\tlexed state:", "*")
 		l.parser.parseItem(tState, []rune{'*'}, l.currentLine)
 		l.consumeSpace()
 	} else {
@@ -121,55 +121,67 @@ func (l *lexer) lexTransactionHeader() {
 	}
 
 	payee := l.takeToNextLineOrComment()
-	fmt.Println("\tlexed payee:", string(payee))
-	l.parser.parseItem(tPayee, payee, l.currentLine)
+	err = l.parser.parseItem(tPayee, payee, l.currentLine)
+	if err != nil {
+		return fmt.Errorf("failed to lex transaction header: %w", err)
+	}
+
+	return nil
 }
 
-func (l *lexer) lexPosting() {
+func (l *lexer) lexPosting() error {
 	l.consumeSpace()
 
 	firstRune := l.next()
 
+	// TODO: handle comments in postings
 	if isCommentIndicator(firstRune) {
-		comment := l.takeToNextLine()
-		fmt.Println("\tlexed comment:", string(comment))
+		// comment := l.takeToNextLine()
 		// l.parser.parseItem(tComment, comment)
-		return
+		return nil
 	}
 
 	if unicode.IsLetter(firstRune) {
 		// We need to backup otherwise we'll miss the first rune of the account
 		l.backup()
 		account := l.takeUntilMoreThanOneSpace()
-		fmt.Println("\tlexed account:", string(account))
-		l.parser.parseItem(tAccount, account, l.currentLine)
+		err := l.parser.parseItem(tAccount, account, l.currentLine)
+		if err != nil {
+			return err
+		}
 
 		// Bail if there are not enough spaces
 		if l.consumeSpace() < 2 {
 			if len(l.input)-l.pos > 1 {
-				log.Fatalln("Not enough spaces following account", len(l.input)-l.pos)
+				return fmt.Errorf("Not enough spaces following account on line", len(l.input)-l.pos, l.currentLine)
 			}
-			return
+			return nil
 		}
 
 		// Lex the commodity
 		commodity := l.lexCommodity()
-		fmt.Println("\tlexed commodity:", string(commodity))
 		if l.consumeSpace() > 0 {
 			commodity = append(commodity, ' ')
 		}
-		l.parser.parseItem(tCommodity, commodity, l.currentLine)
+		err = l.parser.parseItem(tCommodity, commodity, l.currentLine)
+		if err != nil {
+			return err
+		}
 
 		// Lex the amount
 		amount := l.takeToNextLineOrComment()
-		fmt.Println("\tlexed amount:", string(amount))
-		l.parser.parseItem(tAmount, amount, l.currentLine)
+		err = l.parser.parseItem(tAmount, amount, l.currentLine)
+		if err != nil {
+			return err
+		}
 
-		return
+		return nil
 	}
 
 	// If we didn't lex anything, we should reset the parser
 	l.backup()
+
+	return nil
 }
 
 // Takes until a number or a space

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
 )
 
@@ -11,10 +11,18 @@ func main() {
 
 	parser := newParser()
 
-	file, err := os.Open("test.journal")
+	file, err := os.Open("testdata/test.journal")
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		return
 	}
 	defer file.Close()
-	parser.parse(file)
+
+	err = parser.parse(file)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(parser.journal.rootAccount)
 }

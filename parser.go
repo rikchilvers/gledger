@@ -29,25 +29,34 @@ func newParser() *parser {
 	}
 }
 
-func (p *parser) parse(r io.Reader) {
+func (p *parser) parse(r io.Reader) error {
 	lexer := lexer{}
 	lexer.parser = p
 
-	lexer.lex(r)
-
-	// Make sure we close the final transaction
-	p.endTransaction()
+	err := lexer.lex(r)
+	if err != nil {
+		return fmt.Errorf("Failed to parse <file>\n%w", err)
+	}
 
 	for _, t := range p.journal.transactions {
 		fmt.Println()
 		fmt.Println(t)
 	}
+
+	return nil
 }
 
 func (p *parser) parseItem(t itemType, content []rune, line int) error {
 	var err error
 
 	switch t {
+	case tEmptyLine:
+		p.endTransaction()
+		p.currentTransaction = newTransaction()
+		p.currentPosting = nil
+	case tEOF:
+		// Make sure we close the final transaction
+		p.endTransaction()
 	case tDate:
 		// This will start a transaction so check if we need to close a previous one
 		p.endTransaction()
@@ -56,11 +65,11 @@ func (p *parser) parseItem(t itemType, content []rune, line int) error {
 
 		p.currentTransaction.date, err = parseDate(content)
 		if err != nil {
-			return fmt.Errorf("error parsing date: %w", err)
+			return fmt.Errorf("Error parsing date on line %d\n%w", line, err)
 		}
 	case tState:
 		if p.previousItemType != tDate {
-			return errors.New(fmt.Sprintf("expected state but got", p.previousItemType))
+			return errors.New(fmt.Sprintf("Expected state but got", p.previousItemType))
 		}
 
 		switch content[0] {
@@ -73,13 +82,13 @@ func (p *parser) parseItem(t itemType, content []rune, line int) error {
 		}
 	case tPayee:
 		if p.previousItemType != tDate && p.previousItemType != tState {
-			return errors.New(fmt.Sprintf("expected payee but got", p.previousItemType))
+			return errors.New(fmt.Sprintf("Expected payee but got", p.previousItemType))
 		}
 
 		p.currentTransaction.payee = strings.TrimSpace(string(content))
 	case tAccount:
 		if p.previousItemType != tPayee && p.previousItemType != tAmount && p.previousItemType != tAccount {
-			return errors.New(fmt.Sprintf("expected account but go", p.previousItemType))
+			return errors.New(fmt.Sprintf("Expected account but got", p.previousItemType))
 		}
 
 		// Accounts start a posting, so check if we need to start a new one
@@ -97,7 +106,7 @@ func (p *parser) parseItem(t itemType, content []rune, line int) error {
 		p.currentPosting.accountPath = strings.Split(strings.TrimSpace(string(content)), ":")
 	case tCommodity:
 		if p.previousItemType != tAccount {
-			return errors.New(fmt.Sprintf("expected currency but got", p.previousItemType))
+			return errors.New(fmt.Sprintf("Expected currency but got", p.previousItemType))
 		}
 
 		if p.currentPosting.amount == nil {
@@ -107,7 +116,7 @@ func (p *parser) parseItem(t itemType, content []rune, line int) error {
 		p.currentPosting.amount.commodity = string(content)
 	case tAmount:
 		if p.previousItemType != tCommodity && p.previousItemType != tPayee {
-			return errors.New(fmt.Sprintf("expected amount but got", p.previousItemType))
+			return errors.New(fmt.Sprintf("Expected amount but got", p.previousItemType))
 		}
 
 		if p.currentPosting.amount == nil {
@@ -143,7 +152,7 @@ func parseDate(content []rune) (time.Time, error) {
 	case '/':
 		date, err = time.Parse(SlashDateFormat, s)
 	default:
-		return time.Time{}, errors.New(fmt.Sprintf("could not parse malformed date: %s", s))
+		return time.Time{}, errors.New(fmt.Sprintf("Date is malformed: %s", s))
 	}
 
 	if err != nil {
