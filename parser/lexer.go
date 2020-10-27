@@ -1,6 +1,6 @@
 // The lexer reads a file of bytes and identifies components to be parsed
 
-package main
+package parser
 
 import (
 	"bufio"
@@ -10,25 +10,26 @@ import (
 	"log"
 	"unicode"
 	"unicode/utf8"
+
+	. "github.com/rikchilvers/gledger/shared"
 )
 
 //go:generate stringer -type=itemType
 type itemType int
 
 const (
-	tEmptyLine itemType = iota
-	tDate
-	tState
-	tPayee
-	tAccount
-	tCommodity
-	tAmount
-	tComment
-	tEOF
+	emptyLineItem itemType = iota
+	dateItem
+	stateItem
+	payeeItem
+	accountItem
+	commodityItem
+	amountItem
+	commentItem
+	eofItem
 )
 
 const eof = -1
-const tabWidth = 2 // size of a tab in spaces
 const runeBufferCapacity = 256
 
 type lexer struct {
@@ -51,7 +52,7 @@ func (l *lexer) lex(r io.Reader) error {
 		if err != nil {
 			if err.Error() == "EOF" {
 				// Let the parser know we have reached the end of the file
-				parseError := l.parser.parseItem(tEOF, nil)
+				parseError := l.parser.parseItem(eofItem, nil)
 				if parseError != nil {
 					return parseError
 				}
@@ -84,7 +85,7 @@ func (l *lexer) lex(r io.Reader) error {
 func (l *lexer) lexLine() error {
 	// Bail early if the line is empty
 	if len(l.input) == 0 {
-		return l.parser.parseItem(tEmptyLine, nil)
+		return l.parser.parseItem(emptyLineItem, nil)
 	}
 
 	firstRune := l.next()
@@ -97,7 +98,7 @@ func (l *lexer) lexLine() error {
 	// Handle EOF
 	// This will probably only be called during tests
 	if firstRune == eof {
-		return l.parser.parseItem(tEOF, nil)
+		return l.parser.parseItem(eofItem, nil)
 	}
 
 	// Detect transaction headers
@@ -118,7 +119,7 @@ func (l *lexer) lexLine() error {
 
 func (l *lexer) lexTransactionHeader() error {
 	date := l.takeUntilSpace()
-	err := l.parser.parseItem(tDate, date)
+	err := l.parser.parseItem(dateItem, date)
 	if err != nil {
 		return err
 	}
@@ -126,10 +127,10 @@ func (l *lexer) lexTransactionHeader() error {
 	l.consumeSpace()
 	next := l.next()
 	if next == '!' {
-		err = l.parser.parseItem(tState, []rune{'!'})
+		err = l.parser.parseItem(stateItem, []rune{'!'})
 		l.consumeSpace()
 	} else if next == '*' {
-		err = l.parser.parseItem(tState, []rune{'*'})
+		err = l.parser.parseItem(stateItem, []rune{'*'})
 		l.consumeSpace()
 	} else {
 		l.backup()
@@ -139,7 +140,7 @@ func (l *lexer) lexTransactionHeader() error {
 	}
 
 	payee := l.takeToNextLineOrComment()
-	err = l.parser.parseItem(tPayee, payee)
+	err = l.parser.parseItem(payeeItem, payee)
 	if err != nil {
 		return err
 	}
@@ -155,7 +156,7 @@ func (l *lexer) lexPosting() error {
 	// TODO: handle comments in postings
 	if isCommentIndicator(firstRune) {
 		// comment := l.takeToNextLine()
-		// l.parser.parseItem(tComment, comment)
+		// l.parser.parseItem(commentItem, comment)
 		return nil
 	}
 
@@ -163,7 +164,7 @@ func (l *lexer) lexPosting() error {
 		// We need to backup otherwise we'll miss the first rune of the account
 		l.backup()
 		account := l.takeUntilMoreThanOneSpace()
-		err := l.parser.parseItem(tAccount, account)
+		err := l.parser.parseItem(accountItem, account)
 		if err != nil {
 			return err
 		}
@@ -181,14 +182,14 @@ func (l *lexer) lexPosting() error {
 		if l.consumeSpace() > 0 {
 			commodity = append(commodity, ' ')
 		}
-		err = l.parser.parseItem(tCommodity, commodity)
+		err = l.parser.parseItem(commodityItem, commodity)
 		if err != nil {
 			return err
 		}
 
 		// Lex the amount
 		amount := l.takeToNextLineOrComment()
-		err = l.parser.parseItem(tAmount, amount)
+		err = l.parser.parseItem(amountItem, amount)
 		if err != nil {
 			return err
 		}
@@ -261,7 +262,7 @@ func (l *lexer) consumeSpace() int {
 			return count
 		}
 		if r == '\t' {
-			count += tabWidth
+			count += TabWidth
 		}
 		if r == ' ' {
 			count++
@@ -277,7 +278,7 @@ func countSpace(r rune) int {
 	if r == ' ' {
 		return 1
 	} else if r == '\t' {
-		return tabWidth
+		return TabWidth
 	}
 
 	return 0

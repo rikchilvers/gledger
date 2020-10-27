@@ -1,10 +1,10 @@
-package main
+package journal
 
 import "testing"
 
 // Also tests commodities with spaces
 func TestDisplaysPositiveAmount(t *testing.T) {
-	amount := newAmount(4281)
+	amount := NewAmount(4281)
 	amount.commodity = "GBP "
 
 	expected := "GBP 42.81"
@@ -22,7 +22,7 @@ func TestDisplaysPositiveAmount(t *testing.T) {
 
 // Also tests commodities without spaces
 func TestDisplaysNegativeAmount(t *testing.T) {
-	amount := newAmount(-4281)
+	amount := NewAmount(-4281)
 	amount.commodity = "£"
 
 	expected := "£-42.81"
@@ -39,7 +39,7 @@ func TestDisplaysNegativeAmount(t *testing.T) {
 }
 
 func TestDisplaysThreeDigitAmounts(t *testing.T) {
-	amount := newAmount(981)
+	amount := NewAmount(981)
 	amount.commodity = "GBP "
 
 	expected := "GBP 9.81"
@@ -56,7 +56,7 @@ func TestDisplaysThreeDigitAmounts(t *testing.T) {
 }
 
 func TestDisplaysTwoDigitAmounts(t *testing.T) {
-	amount := newAmount(81)
+	amount := NewAmount(81)
 	amount.commodity = "GBP "
 
 	expected := "GBP 0.81"
@@ -73,7 +73,7 @@ func TestDisplaysTwoDigitAmounts(t *testing.T) {
 }
 
 func TestDisplaysOneDigitAmounts(t *testing.T) {
-	amount := newAmount(9)
+	amount := NewAmount(9)
 	amount.commodity = "GBP "
 
 	expected := "GBP 0.09"

@@ -1,4 +1,4 @@
-package main
+package parser
 
 import (
 	"strings"
@@ -19,13 +19,13 @@ type mockParser struct {
 
 func (p *mockParser) parseItem(t itemType, content []rune) error {
 	switch t {
-	case tDate:
+	case dateItem:
 		if string(content) == transactionDate {
 			p.lexedDate = true
 		}
-	case tState:
+	case stateItem:
 		p.lexedState = true
-	case tPayee:
+	case payeeItem:
 		if string(content) == transactionPayee {
 			p.lexedPayee = true
 		}
