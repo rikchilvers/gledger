@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 type journal struct {
 	rootAccount  *account
 	transactions []*transaction
@@ -21,7 +19,6 @@ func (j *journal) addTransaction(t *transaction) {
 	for _, p := range t.postings {
 		// Wire up the account for the posting
 		p.account = j.rootAccount.findOrCreateAccount(p.accountPath)
-		fmt.Printf("wiring up %s\n", p.account)
 
 		// Apply amount to each the account and all its ancestors
 		account := p.account
