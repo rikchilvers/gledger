@@ -2,9 +2,15 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/rikchilvers/gledger/cmd"
 )
 
 func main() {
+	cmd.Execute()
+
+	return
+
 	parser := newParser()
 	err := parser.parse("testdata/test.journal")
 	if err != nil {
