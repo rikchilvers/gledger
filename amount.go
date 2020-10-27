@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
 )
 
 type amount struct {
@@ -18,14 +17,10 @@ func newAmount(q int64) *amount {
 }
 
 func (a amount) displayableQuantity(withCommodity bool) string {
-	q := strconv.FormatInt(a.quantity, 10)
-	offset := 2
-	if a.quantity < 0 {
-		offset = 3
-	}
-	amount := fmt.Sprintf("%s.%s", q[:offset], q[len(q)-2:])
+	q := float64(a.quantity) / 100
+	amount := fmt.Sprintf("%.2f", q)
 	if withCommodity {
-		amount = fmt.Sprintf("%s%s", a.commodity, amount)
+		return fmt.Sprintf("%s%s", a.commodity, amount)
 	}
 	return amount
 }
