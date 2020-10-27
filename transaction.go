@@ -74,7 +74,7 @@ func (t *transaction) close() error {
 
 	if sum != 0 {
 		if t.postingWithElidedAmount == nil {
-			return errors.New("Transaction does not balance\n")
+			return errors.New("transaction does not balance")
 		}
 		t.postingWithElidedAmount.amount = newAmount(-sum)
 	}

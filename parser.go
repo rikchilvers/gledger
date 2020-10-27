@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -75,7 +74,7 @@ func (p *parser) parseItem(t itemType, content []rune) error {
 		}
 	case tState:
 		if p.previousItemType != tDate {
-			return errors.New(fmt.Sprintf("Expected state but got %s", t))
+			return fmt.Errorf("Expected state but got %s", t)
 		}
 
 		switch content[0] {
@@ -88,13 +87,13 @@ func (p *parser) parseItem(t itemType, content []rune) error {
 		}
 	case tPayee:
 		if p.previousItemType != tDate && p.previousItemType != tState {
-			return errors.New(fmt.Sprintf("Expected payee but got %s", t))
+			return fmt.Errorf("Expected payee but got %s", t)
 		}
 
 		p.currentTransaction.payee = strings.TrimSpace(string(content))
 	case tAccount:
 		if p.previousItemType != tPayee && p.previousItemType != tAmount && p.previousItemType != tAccount {
-			return errors.New(fmt.Sprintf("Expected account but got %s", t))
+			return fmt.Errorf("Expected account but got %s", t)
 		}
 
 		// Accounts start a posting, so check if we need to start a new one
@@ -112,7 +111,7 @@ func (p *parser) parseItem(t itemType, content []rune) error {
 		p.currentPosting.accountPath = strings.Split(strings.TrimSpace(string(content)), ":")
 	case tCommodity:
 		if p.previousItemType != tAccount {
-			return errors.New(fmt.Sprintf("Expected currency but got %s", t))
+			return fmt.Errorf("Expected currency but got %s", t)
 		}
 
 		if p.currentPosting.amount == nil {
@@ -122,7 +121,7 @@ func (p *parser) parseItem(t itemType, content []rune) error {
 		p.currentPosting.amount.commodity = string(content)
 	case tAmount:
 		if p.previousItemType != tCommodity && p.previousItemType != tPayee {
-			return errors.New(fmt.Sprintf("Expected amount but got %s", t))
+			return fmt.Errorf("Expected amount but got %s", t)
 		}
 
 		if p.currentPosting.amount == nil {
@@ -134,7 +133,7 @@ func (p *parser) parseItem(t itemType, content []rune) error {
 			return fmt.Errorf("error parsing amount: %w", err)
 		}
 	default:
-		return errors.New(fmt.Sprintf("Unhandled itemType: %s", t))
+		return fmt.Errorf("Unhandled itemType: %s", t)
 	}
 
 	p.previousItemType = t
@@ -158,7 +157,7 @@ func parseDate(content []rune) (time.Time, error) {
 	case '/':
 		date, err = time.Parse(SlashDateFormat, s)
 	default:
-		return time.Time{}, errors.New(fmt.Sprintf("Date is malformed: %s", s))
+		return time.Time{}, fmt.Errorf("Date is malformed: %s", s)
 	}
 
 	if err != nil {
