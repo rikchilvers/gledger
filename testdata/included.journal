@@ -1,0 +1,8 @@
+2020-10-22 A restaurant
+    ; a comment in the restaurant posting
+    Assets:Current 
+    Expenses:Life:Dining    £20
+
+2020-10-24 ! Clothes store  ; new shoes
+    Assets:Current
+    Expenses:Life:Clothing    £50.00

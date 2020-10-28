@@ -67,6 +67,8 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 		if err != nil {
 			return err
 		}
+	case includeItem:
+		fmt.Println("would include", string(content))
 	case dateItem:
 		// This will start a transaction so check if we need to close a previous one
 		err := p.endTransaction()

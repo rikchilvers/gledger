@@ -19,6 +19,7 @@ type itemType int
 
 const (
 	emptyLineItem itemType = iota
+	includeItem
 	dateItem
 	stateItem
 	payeeItem
@@ -88,11 +89,18 @@ func (l *lexer) lexLine() error {
 		return l.parser.parseItem(emptyLineItem, nil)
 	}
 
+	// We take the first rune rather than peeking so that we can detect posting lines
 	firstRune := l.next()
 
 	// Bail if the line is a comment
 	if isCommentIndicator(firstRune) {
 		return nil
+	}
+
+	// Handle include directives
+	if firstRune == 'i' {
+		l.backup()
+		return l.lexIncludeDirective()
 	}
 
 	// Handle EOF
@@ -115,6 +123,38 @@ func (l *lexer) lexLine() error {
 	}
 
 	return errors.New("Unhandled line type for lexing")
+}
+
+func (l *lexer) lexIncludeDirective() error {
+	if directive := l.takeUntilSpace(); !equal(directive, []rune("include")) {
+		return fmt.Errorf("unexpected directive: %s", string(directive))
+	}
+
+	if l.consumeSpace() == 0 {
+		return errors.New("could not lex include directive")
+	}
+
+	fileToInclude := l.takeToNextLineOrComment()
+
+	if len(fileToInclude) == 0 {
+		return errors.New("could not lex include directive")
+	}
+
+	return l.parser.parseItem(includeItem, fileToInclude)
+}
+
+// Equal tells whether a and b contain the same elements.
+// A nil argument is equivalent to an empty slice.
+func equal(a, b []rune) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func (l *lexer) lexTransactionHeader() error {
@@ -271,7 +311,7 @@ func (l *lexer) consumeSpace() int {
 }
 
 func isCommentIndicator(r rune) bool {
-	return r == ';'
+	return r == ';' || r == '#'
 }
 
 func countSpace(r rune) int {

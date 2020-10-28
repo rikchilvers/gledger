@@ -9,19 +9,20 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[emptyLineItem-0]
-	_ = x[dateItem-1]
-	_ = x[stateItem-2]
-	_ = x[payeeItem-3]
-	_ = x[accountItem-4]
-	_ = x[commodityItem-5]
-	_ = x[amountItem-6]
-	_ = x[commentItem-7]
-	_ = x[eofItem-8]
+	_ = x[includeItem-1]
+	_ = x[dateItem-2]
+	_ = x[stateItem-3]
+	_ = x[payeeItem-4]
+	_ = x[accountItem-5]
+	_ = x[commodityItem-6]
+	_ = x[amountItem-7]
+	_ = x[commentItem-8]
+	_ = x[eofItem-9]
 }
 
-const _itemType_name = "emptyLineItemdateItemstateItempayeeItemaccountItemcommodityItemamountItemcommentItemeofItem"
+const _itemType_name = "emptyLineItemincludeItemdateItemstateItempayeeItemaccountItemcommodityItemamountItemcommentItemeofItem"
 
-var _itemType_index = [...]uint8{0, 13, 21, 30, 39, 50, 63, 73, 84, 91}
+var _itemType_index = [...]uint8{0, 13, 24, 32, 41, 50, 61, 74, 84, 95, 102}
 
 func (i itemType) String() string {
 	if i < 0 || i >= itemType(len(_itemType_index)-1) {
