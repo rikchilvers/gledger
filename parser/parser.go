@@ -10,6 +10,8 @@ import (
 	. "github.com/rikchilvers/gledger/journal"
 )
 
+type Command = func(t *Transaction) error
+
 type journalParser interface {
 	parseItem(t itemType, content []rune) error
 }
@@ -19,16 +21,16 @@ type Parser struct {
 	previousItemType   itemType
 	currentPosting     *Posting
 	currentTransaction *Transaction
-	journal            *Journal
+	command            Command
 }
 
 // NewParser creates a parser (including its journal)
-func NewParser() *Parser {
+func NewParser(cmd Command) *Parser {
 	return &Parser{
 		previousItemType:   -1,
 		currentPosting:     nil,
 		currentTransaction: nil,
-		journal:            NewJournal(),
+		command:            cmd,
 	}
 }
 
@@ -236,7 +238,12 @@ func (p *Parser) endTransaction() error {
 	if err != nil {
 		return err
 	}
-	p.journal.AddTransaction(p.currentTransaction)
+
+	if p.command != nil {
+		if err = p.command(p.currentTransaction); err != nil {
+			return err
+		}
+	}
 
 	p.currentTransaction = nil
 	p.currentPosting = nil
