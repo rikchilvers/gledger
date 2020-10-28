@@ -397,11 +397,11 @@ func (l *lexer) takeUntilMoreThanOneSpace() []rune {
 	for {
 		r := l.peek()
 
-		if r == eof {
-			return runes
-		}
-
-		if r == '\t' {
+		if r == eof || r == '\t' {
+			if previous == ' ' {
+				// Drop the trailing space
+				return runes[:len(runes)-1]
+			}
 			return runes
 		}
 
