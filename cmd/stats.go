@@ -18,13 +18,13 @@ var statsCmd = &cobra.Command{
 	Aliases:      []string{"statistics", "s"},
 	Short:        "Shows statistics about the journal",
 	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		js := newJournalStatistics()
 		if err := parse(js.analyseTransaction); err != nil {
-			return err
+			fmt.Println(err)
+			return
 		}
 		js.report()
-		return nil
 	},
 }
 
