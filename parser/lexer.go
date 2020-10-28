@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"unicode"
 	"unicode/utf8"
 
@@ -157,6 +158,11 @@ func (l *lexer) lexIncludeDirective() error {
 	if len(fileToInclude) == 0 {
 		return errors.New("could not lex include directive")
 	}
+
+	// We need to add any directory information here
+	// because the parser does not know about where we're including from
+	dir, _ := filepath.Split(l.journalPath)
+	fileToInclude = append([]rune(dir), fileToInclude...)
 
 	return l.parser(includeItem, fileToInclude)
 }

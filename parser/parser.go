@@ -55,7 +55,11 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 			return err
 		}
 	case includeItem:
-		fmt.Println("would include", string(content))
+		lexer := newLexer(string(content), p.parseItem)
+		if err := lexer.lex(); err != nil {
+			// This is the exit point for the lexer's errors
+			return fmt.Errorf("Error at %w", err)
+		}
 	case dateItem:
 		// This will start a transaction so check if we need to close a previous one
 		err := p.endTransaction()
