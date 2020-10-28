@@ -2,7 +2,7 @@
 
 ; This is a comment
 ; This is another comment
-2020-10-10 * Grocery store  ; Weekly shop
+2020-08-10 * Grocery store  ; Weekly shop
     Assets:Cash  £-40
     Expenses:Immediate Obligations:Groceries    £40
 
