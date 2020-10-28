@@ -148,8 +148,8 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 }
 
 func parseDate(content []rune) (time.Time, error) {
-	const DashDateFormat string = "2006-01-02"
-	const DodateItemFormat string = "2006.01.02"
+	const dashDateFormat string = "2006-01-02"
+	const dotdateItemFormat string = "2006.01.02"
 	const SlashDateFormat string = "2006/01/02"
 
 	s := string(content)
@@ -158,9 +158,9 @@ func parseDate(content []rune) (time.Time, error) {
 
 	switch content[4] {
 	case '-':
-		date, err = time.Parse(DashDateFormat, s)
+		date, err = time.Parse(dashDateFormat, s)
 	case '.':
-		date, err = time.Parse(DodateItemFormat, s)
+		date, err = time.Parse(dotdateItemFormat, s)
 	case '/':
 		date, err = time.Parse(SlashDateFormat, s)
 	default:
