@@ -9,25 +9,25 @@ func TestNewAccountWithChildren(t *testing.T) {
 	components := []string{"assets", "current"}
 	account := newAccountWithChildren(components, nil)
 
-	if account.name != "current" {
+	if account.Name != "current" {
 		t.Fatalf("account name is incorrect")
 	}
 
-	if account.parent == nil {
+	if account.Parent == nil {
 		t.Fatalf("account does not have a parent")
 	}
 
-	if account.parent.name != "assets" {
+	if account.Parent.Name != "assets" {
 		t.Fatalf("account has incorrect parent")
 	}
 
-	if _, didFind := account.parent.children["current"]; !didFind {
+	if _, didFind := account.Parent.Children["current"]; !didFind {
 		t.Fatalf("account parent has missing child")
 	}
 }
 
 func TestFindOrCreate(t *testing.T) {
-	root := newAccount("root")
+	root := NewAccount("root")
 	components := []string{"assets", "current"}
 
 	current := root.findOrCreateAccount(components)
@@ -36,19 +36,19 @@ func TestFindOrCreate(t *testing.T) {
 		t.Fatalf("account was not created")
 	}
 
-	if current.name != "current" {
+	if current.Name != "current" {
 		t.Fatalf("created account has wrong name")
 	}
 
-	if current.parent == nil {
+	if current.Parent == nil {
 		t.Fatalf("created account has no parent")
 	}
 
-	if current.parent.name != "assets" {
+	if current.Parent.Name != "assets" {
 		t.Fatalf("created account has incorrect parent")
 	}
 
-	if current.parent.parent.name != "root" {
+	if current.Parent.Parent.Name != "root" {
 		t.Fatalf("created account has incorrect grandparent")
 	}
 
@@ -56,14 +56,14 @@ func TestFindOrCreate(t *testing.T) {
 	components[1] = "savings"
 	savings := root.findOrCreateAccount(components)
 
-	if len(savings.parent.children) != 2 {
+	if len(savings.Parent.Children) != 2 {
 		t.Fatalf("created account's parent does not have enough children")
 	}
 
 	// Search for an account
 	searchResult := root.findOrCreateAccount(components)
 
-	if searchResult.name != "savings" {
+	if searchResult.Name != "savings" {
 		t.Fatalf("search returns incorrect account")
 	}
 
@@ -82,7 +82,7 @@ func TestAccountPrinting(t *testing.T) {
 	components := []string{"assets", "my savings account "}
 	account := newAccountWithChildren(components, nil)
 
-	result := fmt.Sprintf("%s", account.parent)
+	result := fmt.Sprintf("%s", account.Parent)
 	expected := "assets\n  my savings account "
 
 	if result != expected {

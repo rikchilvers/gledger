@@ -5,7 +5,7 @@ import "testing"
 // Also tests commodities with spaces
 func TestDisplaysPositiveAmount(t *testing.T) {
 	amount := NewAmount(4281)
-	amount.commodity = "GBP "
+	amount.Commodity = "GBP "
 
 	expected := "GBP 42.81"
 	got := amount.displayableQuantity(true)
@@ -23,7 +23,7 @@ func TestDisplaysPositiveAmount(t *testing.T) {
 // Also tests commodities without spaces
 func TestDisplaysNegativeAmount(t *testing.T) {
 	amount := NewAmount(-4281)
-	amount.commodity = "£"
+	amount.Commodity = "£"
 
 	expected := "£-42.81"
 	got := amount.displayableQuantity(true)
@@ -40,7 +40,7 @@ func TestDisplaysNegativeAmount(t *testing.T) {
 
 func TestDisplaysThreeDigitAmounts(t *testing.T) {
 	amount := NewAmount(981)
-	amount.commodity = "GBP "
+	amount.Commodity = "GBP "
 
 	expected := "GBP 9.81"
 	got := amount.displayableQuantity(true)
@@ -57,7 +57,7 @@ func TestDisplaysThreeDigitAmounts(t *testing.T) {
 
 func TestDisplaysTwoDigitAmounts(t *testing.T) {
 	amount := NewAmount(81)
-	amount.commodity = "GBP "
+	amount.Commodity = "GBP "
 
 	expected := "GBP 0.81"
 	got := amount.displayableQuantity(true)
@@ -74,7 +74,7 @@ func TestDisplaysTwoDigitAmounts(t *testing.T) {
 
 func TestDisplaysOneDigitAmounts(t *testing.T) {
 	amount := NewAmount(9)
-	amount.commodity = "GBP "
+	amount.Commodity = "GBP "
 
 	expected := "GBP 0.09"
 	got := amount.displayableQuantity(true)
