@@ -2,7 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -11,10 +10,7 @@ import (
 )
 
 type Command = func(t *Transaction) error
-
-type journalParser interface {
-	parseItem(t itemType, content []rune) error
-}
+type itemParser = func(t itemType, content []rune) error
 
 // Parser is how gledger reads journal files
 type Parser struct {
@@ -36,19 +32,10 @@ func NewParser(cmd Command) *Parser {
 
 // Parse lexes and parses the provided file line by line
 func (p *Parser) Parse(journalPath string) error {
-	file, err := os.Open(journalPath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	lexer := lexer{}
-	lexer.parser = p
-
-	err = lexer.lex(file)
-	if err != nil {
+	lexer := newLexer(journalPath, p.parseItem)
+	if err := lexer.lex(); err != nil {
 		// This is the exit point for the lexer's errors
-		return fmt.Errorf("Error at %s%w", journalPath, err)
+		return fmt.Errorf("Error at %w", err)
 	}
 
 	return nil

@@ -6,8 +6,8 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io"
 	"log"
+	"os"
 	"unicode"
 	"unicode/utf8"
 
@@ -34,18 +34,37 @@ const eof = -1
 const runeBufferCapacity = 256
 
 type lexer struct {
+	journalPath string
 	reader      *bufio.Reader
 	input       []byte
 	currentLine int
 	pos         int // input position
 	start       int // item start position
 	width       int // width of last element
-	parser      journalParser
+	parser      itemParser
+}
+
+func newLexer(journalPath string, parser itemParser) lexer {
+	return lexer{
+		journalPath: journalPath,
+		reader:      nil,
+		input:       nil,
+		currentLine: 0,
+		pos:         0,
+		start:       0,
+		width:       0,
+		parser:      parser,
+	}
 }
 
 // Lexes the file line by line
-func (l *lexer) lex(r io.Reader) error {
-	l.reader = bufio.NewReader(r)
+func (l *lexer) lex() error {
+	file, err := os.Open(l.journalPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	l.reader = bufio.NewReader(file)
 
 	l.currentLine = 1
 	for {
@@ -53,7 +72,7 @@ func (l *lexer) lex(r io.Reader) error {
 		if err != nil {
 			if err.Error() == "EOF" {
 				// Let the parser know we have reached the end of the file
-				parseError := l.parser.parseItem(eofItem, nil)
+				parseError := l.parser(eofItem, nil)
 				if parseError != nil {
 					return parseError
 				}
@@ -71,10 +90,9 @@ func (l *lexer) lex(r io.Reader) error {
 		l.width = 0
 
 		l.input = line
-		err = l.lexLine()
-		if err != nil {
+		if err = l.lexLine(); err != nil {
 			// Add line data and pass up the error
-			return fmt.Errorf(":%d\n%w", l.currentLine, err)
+			return fmt.Errorf("%s:%d\n%w", l.journalPath, l.currentLine, err)
 		}
 		l.currentLine++
 	}
@@ -86,7 +104,7 @@ func (l *lexer) lex(r io.Reader) error {
 func (l *lexer) lexLine() error {
 	// Bail early if the line is empty
 	if len(l.input) == 0 {
-		return l.parser.parseItem(emptyLineItem, nil)
+		return l.parser(emptyLineItem, nil)
 	}
 
 	// We take the first rune rather than peeking so that we can detect posting lines
@@ -106,7 +124,7 @@ func (l *lexer) lexLine() error {
 	// Handle EOF
 	// This will probably only be called during tests
 	if firstRune == eof {
-		return l.parser.parseItem(eofItem, nil)
+		return l.parser(eofItem, nil)
 	}
 
 	// Detect transaction headers
@@ -140,7 +158,7 @@ func (l *lexer) lexIncludeDirective() error {
 		return errors.New("could not lex include directive")
 	}
 
-	return l.parser.parseItem(includeItem, fileToInclude)
+	return l.parser(includeItem, fileToInclude)
 }
 
 // Equal tells whether a and b contain the same elements.
@@ -158,19 +176,20 @@ func equal(a, b []rune) bool {
 }
 
 func (l *lexer) lexTransactionHeader() error {
+	var err error
 	date := l.takeUntilSpace()
-	err := l.parser.parseItem(dateItem, date)
-	if err != nil {
+
+	if err = l.parser(dateItem, date); err != nil {
 		return err
 	}
 
 	l.consumeSpace()
 	next := l.next()
 	if next == '!' {
-		err = l.parser.parseItem(stateItem, []rune{'!'})
+		err = l.parser(stateItem, []rune{'!'})
 		l.consumeSpace()
 	} else if next == '*' {
-		err = l.parser.parseItem(stateItem, []rune{'*'})
+		err = l.parser(stateItem, []rune{'*'})
 		l.consumeSpace()
 	} else {
 		l.backup()
@@ -180,8 +199,7 @@ func (l *lexer) lexTransactionHeader() error {
 	}
 
 	payee := l.takeToNextLineOrComment()
-	err = l.parser.parseItem(payeeItem, payee)
-	if err != nil {
+	if err = l.parser(payeeItem, payee); err != nil {
 		return err
 	}
 
@@ -189,6 +207,7 @@ func (l *lexer) lexTransactionHeader() error {
 }
 
 func (l *lexer) lexPosting() error {
+	var err error
 	l.consumeSpace()
 
 	firstRune := l.next()
@@ -204,8 +223,7 @@ func (l *lexer) lexPosting() error {
 		// We need to backup otherwise we'll miss the first rune of the account
 		l.backup()
 		account := l.takeUntilMoreThanOneSpace()
-		err := l.parser.parseItem(accountItem, account)
-		if err != nil {
+		if err = l.parser(accountItem, account); err != nil {
 			return err
 		}
 
@@ -222,15 +240,13 @@ func (l *lexer) lexPosting() error {
 		if l.consumeSpace() > 0 {
 			commodity = append(commodity, ' ')
 		}
-		err = l.parser.parseItem(commodityItem, commodity)
-		if err != nil {
+		if err = l.parser(commodityItem, commodity); err != nil {
 			return err
 		}
 
 		// Lex the amount
 		amount := l.takeToNextLineOrComment()
-		err = l.parser.parseItem(amountItem, amount)
-		if err != nil {
+		if err = l.parser(amountItem, amount); err != nil {
 			return err
 		}
 
