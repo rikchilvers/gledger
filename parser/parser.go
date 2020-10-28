@@ -44,14 +44,12 @@ func (p *Parser) Parse(journalPath string) error {
 func (p *Parser) parseItem(t itemType, content []rune) error {
 	switch t {
 	case emptyLineItem:
-		err := p.endTransaction()
-		if err != nil {
+		if err := p.endTransaction(); err != nil {
 			return err
 		}
 	case eofItem:
 		// Make sure we close the final transaction
-		err := p.endTransaction()
-		if err != nil {
+		if err := p.endTransaction(); err != nil {
 			return err
 		}
 	case includeItem:
@@ -126,8 +124,7 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 			p.currentPosting.Amount = NewAmount(0)
 		}
 
-		err := p.parseAmount(content)
-		if err != nil {
+		if err := p.parseAmount(content); err != nil {
 			return fmt.Errorf("error parsing amount: %w", err)
 		}
 	default:
