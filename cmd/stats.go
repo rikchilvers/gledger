@@ -33,6 +33,7 @@ const dateLayout string = "2006-01-02"
 type journalStatistics struct {
 	firstTransactionDate time.Time
 	lastTransactionDate  time.Time
+	transactionCount     int
 	uniqueAccounts       int
 	uniquePayees         int
 }
@@ -41,12 +42,16 @@ func newJournalStatistics() journalStatistics {
 	return journalStatistics{
 		firstTransactionDate: time.Time{},
 		lastTransactionDate:  time.Time{},
+		transactionCount:     0,
 		uniqueAccounts:       0,
 		uniquePayees:         0,
 	}
 }
 
 func (js *journalStatistics) analyseTransaction(t *journal.Transaction) error {
+	// Increment transaction count
+	js.transactionCount++
+
 	// Check start date
 	if js.firstTransactionDate.IsZero() || t.Date.Before(js.firstTransactionDate) {
 		js.firstTransactionDate = t.Date
@@ -61,10 +66,16 @@ func (js *journalStatistics) analyseTransaction(t *journal.Transaction) error {
 }
 
 func (js journalStatistics) report() {
+	// Report start and end dates
 	fmt.Printf("First transaction:\t%s\n", js.firstTransactionDate.Format(dateLayout))
 	fmt.Printf("Last transaction:\t%s\n", js.lastTransactionDate.Format(dateLayout))
 
+	// Report duration
 	duration := js.lastTransactionDate.Sub(js.firstTransactionDate)
 	days := math.Round(duration.Hours() / 24)
 	fmt.Printf("Time period:\t\t%.f days\n", days)
+
+	// Report transaction count
+	transactionsPerDay := float64(js.transactionCount) / days
+	fmt.Printf("Transactions:\t\t%d (%.1f per day)\n", js.transactionCount, transactionsPerDay)
 }
