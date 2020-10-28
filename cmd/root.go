@@ -1,10 +1,8 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
-	"github.com/rikchilvers/gledger/parser"
 	"github.com/spf13/cobra"
 )
 
@@ -26,15 +24,7 @@ func init() {
 // Execute runs gledger
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		// fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-}
-
-func parse(journalPath string) error {
-	p := parser.NewParser()
-	if err := p.Parse(journalPath); err != nil {
-		return err
-	}
-	return nil
 }

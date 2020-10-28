@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -11,14 +9,15 @@ func init() {
 }
 
 var statsCmd = &cobra.Command{
-	Use:     "stats",
-	Aliases: []string{"statistics", "s"},
-	Short:   "Shows some journal statistics",
-	Run: func(cmd *cobra.Command, args []string) {
-		gatherStatistics()
+	Use:          "stats",
+	Aliases:      []string{"statistics", "s"},
+	Short:        "Shows some journal statistics",
+	SilenceUsage: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return gatherStatistics()
 	},
 }
 
-func gatherStatistics() {
-	fmt.Println("some statistics")
+func gatherStatistics() error {
+	return parse()
 }
