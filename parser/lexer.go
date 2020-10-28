@@ -334,16 +334,20 @@ func (l *lexer) takeUntilMoreThanOneSpace() []rune {
 	var previous rune = -1
 	for {
 		r := l.peek()
+
 		if r == eof {
 			return runes
 		}
 
 		if r == '\t' {
 			return runes
-		} else if r == ' ' {
+		}
+
+		if r == ' ' {
 			if previous == ' ' {
 				l.backup()
-				return runes
+				// Drop the space we appended last time
+				return runes[:len(runes)-1]
 			}
 			previous = r
 		} else {

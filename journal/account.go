@@ -35,7 +35,8 @@ func (a Account) asString(level int) string {
 	return s
 }
 
-func (a Account) path() string {
+// TODO: set this as a variable from the posting
+func (a Account) Path() string {
 	path := a.Name
 	current := a
 	for {

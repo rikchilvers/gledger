@@ -97,6 +97,7 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 			return fmt.Errorf("Expected payee but got %s", t)
 		}
 
+		// TODO: try to remove necessity of TrimSpace everywhere
 		p.currentTransaction.Payee = strings.TrimSpace(string(content))
 	case accountItem:
 		if p.previousItemType != payeeItem && p.previousItemType != amountItem && p.previousItemType != accountItem {
@@ -112,10 +113,7 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 
 		p.currentPosting.Transaction = p.currentTransaction
 
-		// TODO: try to remove necessity of TrimSpace everywhere
-		// a := strings.TrimSpace(string(content))
-		// p.currentPosting.account = newAccountWithChildren(strings.Split(a, ":"), nil)
-		p.currentPosting.AccountPath = strings.Split(strings.TrimSpace(string(content)), ":")
+		p.currentPosting.AccountPath = string(content)
 	case commodityItem:
 		if p.previousItemType != accountItem {
 			return fmt.Errorf("Expected currency but got %s", t)

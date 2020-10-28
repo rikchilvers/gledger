@@ -34,7 +34,7 @@ type journalStatistics struct {
 	firstTransactionDate time.Time
 	lastTransactionDate  time.Time
 	transactionCount     int
-	uniqueAccounts       int
+	uniqueAccounts       map[string]bool
 	uniquePayees         int
 }
 
@@ -43,7 +43,7 @@ func newJournalStatistics() journalStatistics {
 		firstTransactionDate: time.Time{},
 		lastTransactionDate:  time.Time{},
 		transactionCount:     0,
-		uniqueAccounts:       0,
+		uniqueAccounts:       make(map[string]bool),
 		uniquePayees:         0,
 	}
 }
@@ -62,6 +62,12 @@ func (js *journalStatistics) analyseTransaction(t *journal.Transaction) error {
 		js.lastTransactionDate = t.Date
 	}
 
+	for _, p := range t.Postings {
+		// Add the account path
+		// We don't need to check if it exists beforehand because we don't care about the value
+		js.uniqueAccounts[p.AccountPath] = true
+	}
+
 	return nil
 }
 
@@ -78,4 +84,7 @@ func (js journalStatistics) report() {
 	// Report transaction count
 	transactionsPerDay := float64(js.transactionCount) / days
 	fmt.Printf("Transactions:\t\t%d (%.1f per day)\n", js.transactionCount, transactionsPerDay)
+
+	// Report unique account count
+	fmt.Printf("Unique accounts:\t%d\n", len(js.uniqueAccounts))
 }

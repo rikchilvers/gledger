@@ -1,5 +1,7 @@
 package journal
 
+import "strings"
+
 type Journal struct {
 	rootAccount  *Account
 	transactions []*Transaction
@@ -18,7 +20,7 @@ func (j *Journal) AddTransaction(t *Transaction) {
 	// Add postings to accounts
 	for _, p := range t.Postings {
 		// Wire up the account for the posting
-		p.Account = j.rootAccount.findOrCreateAccount(p.AccountPath)
+		p.Account = j.rootAccount.findOrCreateAccount(strings.Split(p.AccountPath, ":"))
 
 		// Apply amount to each the account and all its ancestors
 		account := p.Account

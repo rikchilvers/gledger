@@ -6,7 +6,7 @@ type Posting struct {
 	Transaction *Transaction // The transaction this posting belongs to
 	Comments    []string     // Any comments attached to the posting
 	Account     *Account     // The account this posting relates to
-	AccountPath []string     // The : delimited path to the above account
+	AccountPath string       // The : delimited path to the above account
 	Amount      *Amount
 }
 
@@ -16,7 +16,7 @@ func NewPosting() *Posting {
 		Transaction: nil,
 		Comments:    make([]string, 0),
 		Account:     nil,
-		AccountPath: make([]string, 5),
+		AccountPath: "",
 		Amount:      nil,
 	}
 }
