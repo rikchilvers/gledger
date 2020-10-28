@@ -1,9 +1,13 @@
 package parser
 
-import "testing"
+import (
+	"testing"
 
-func TesdateItemParsing(t *testing.T) {
-	parser := NewParser()
+	. "github.com/rikchilvers/gledger/journal"
+)
+
+func TestDateItemParsing(t *testing.T) {
+	parser := NewParser(nil)
 
 	// Correctly formed dates
 
@@ -40,16 +44,16 @@ func TesdateItemParsing(t *testing.T) {
 	}
 }
 
-func TesamountItemParsing(t *testing.T) {
-	parser := NewParser()
-	parser.currentPosting = newPosting()
+func TestAmountItemParsing(t *testing.T) {
+	parser := NewParser(nil)
+	parser.currentPosting = NewPosting()
 
 	parser.previousItemType = commodityItem
 	err := parser.parseItem(amountItem, []rune("42.81"))
 	if err != nil {
 		t.Fatalf("parser returns error for correctly formed amount: %s", err)
 	}
-	if parser.currentPosting.amount.quantity != 4281 {
+	if parser.currentPosting.Amount.Quantity != 4281 {
 		t.Fatalf("parser incorrectly parsed amount")
 	}
 
@@ -64,7 +68,7 @@ func TesamountItemParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parser returns error for correctly formed amount: %s", err)
 	}
-	if parser.currentPosting.amount.quantity != 4281 {
+	if parser.currentPosting.Amount.Quantity != 4281 {
 		t.Fatalf("parser incorrectly parsed amount")
 	}
 
@@ -73,7 +77,7 @@ func TesamountItemParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parser returns error for correctly formed amount: %s", err)
 	}
-	if parser.currentPosting.amount.quantity != -4281 {
+	if parser.currentPosting.Amount.Quantity != -4281 {
 		t.Fatalf("parser incorrectly parsed amount")
 	}
 }
