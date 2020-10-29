@@ -20,7 +20,7 @@ func (j *journal) addTransaction(t *Transaction) {
 	// Add postings to accounts
 	for _, p := range t.Postings {
 		// Wire up the account for the posting
-		p.Account = j.rootAccount.findOrCreateAccount(strings.Split(p.AccountPath, ":"))
+		p.Account = j.rootAccount.FindOrCreateAccount(strings.Split(p.AccountPath, ":"))
 
 		// Apply amount to each the account and all its ancestors
 		account := p.Account

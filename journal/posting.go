@@ -24,5 +24,5 @@ func NewPosting() *Posting {
 }
 
 func (p Posting) String() string {
-	return fmt.Sprintf("%s  %s", p.Account.Name, p.Amount.displayableQuantity(true))
+	return fmt.Sprintf("%s  %s", p.Account.Name, p.Amount.DisplayableQuantity(true))
 }

@@ -79,7 +79,9 @@ func newAccountWithChildren(components []string, parent *Account) *Account {
 	}
 }
 
-func (a Account) findOrCreateAccount(components []string) *Account {
+// FindOrCreateAccount searches the Account's children for an one matching the components,
+// creating children as necessary if it does not find matching ones
+func (a Account) FindOrCreateAccount(components []string) *Account {
 	deepest, remaining := a.findChildAndDescend(components)
 
 	// If there were no remaining accounts, we found the deepest
