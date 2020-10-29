@@ -4,11 +4,13 @@ import (
 	"fmt"
 )
 
+// Amount encapsulates the quantity of a specific commodity (e.g. GBP)
 type Amount struct {
 	Commodity string
 	Quantity  int64
 }
 
+// NewAmount creates an Amount
 func NewAmount(q int64) *Amount {
 	return &Amount{
 		Commodity: "",

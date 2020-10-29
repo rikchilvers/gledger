@@ -7,14 +7,17 @@ import (
 )
 
 //go:generate stringer -type=TransactionState
+// TransactionState represents the state a Transaction can be in
 type TransactionState int
 
+// State a Transaction can be in
 const (
 	NoState TransactionState = iota
 	UnclearedState
 	ClearedState
 )
 
+// Transaction holds details about an individual transaction
 type Transaction struct {
 	Date                    time.Time
 	State                   TransactionState
@@ -23,6 +26,7 @@ type Transaction struct {
 	postingWithElidedAmount *Posting
 }
 
+// NewTransaction creates a transaction
 func NewTransaction() *Transaction {
 	return &Transaction{
 		Date:                    time.Time{},
@@ -46,6 +50,7 @@ func (t Transaction) String() string {
 	return ts
 }
 
+// AddPosting adds a posting to the Transaction (ensuring there is only one with an elided amount)
 func (t *Transaction) AddPosting(p *Posting) error {
 	if p.Amount == nil {
 		if t.postingWithElidedAmount != nil {
@@ -61,6 +66,7 @@ func (t *Transaction) AddPosting(p *Posting) error {
 	return nil
 }
 
+// Close ensures the transaction balances (assigning an amount to an elided posting as necessary)
 func (t *Transaction) Close() error {
 	// Check the transaction balances
 	sum := int64(0)

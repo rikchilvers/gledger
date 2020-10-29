@@ -12,7 +12,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	. "github.com/rikchilvers/gledger/shared"
+	"github.com/rikchilvers/gledger/shared"
 )
 
 //go:generate stringer -type=itemType
@@ -324,7 +324,7 @@ func (l *lexer) consumeSpace() int {
 			return count
 		}
 		if r == '\t' {
-			count += TabWidth
+			count += shared.TabWidth
 		}
 		if r == ' ' {
 			count++
@@ -340,7 +340,7 @@ func countSpace(r rune) int {
 	if r == ' ' {
 		return 1
 	} else if r == '\t' {
-		return TabWidth
+		return shared.TabWidth
 	}
 
 	return 0

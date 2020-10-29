@@ -2,19 +2,19 @@ package journal
 
 import "strings"
 
-type Journal struct {
+type journal struct {
 	rootAccount  *Account
 	transactions []*Transaction
 }
 
-func NewJournal() *Journal {
-	return &Journal{
+func newJournal() *journal {
+	return &journal{
 		rootAccount:  NewAccount("root"),
 		transactions: make([]*Transaction, 0, 1024),
 	}
 }
 
-func (j *Journal) AddTransaction(t *Transaction) {
+func (j *journal) addTransaction(t *Transaction) {
 	j.transactions = append(j.transactions, t)
 
 	// Add postings to accounts

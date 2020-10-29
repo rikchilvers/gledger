@@ -2,6 +2,7 @@ package journal
 
 import "fmt"
 
+// Posting holds details about a single Posting
 type Posting struct {
 	Transaction *Transaction // The transaction this posting belongs to
 	Comments    []string     // Any comments attached to the posting
@@ -10,6 +11,7 @@ type Posting struct {
 	Amount      *Amount
 }
 
+// NewPosting creates a Posting
 func NewPosting() *Posting {
 	return &Posting{
 		// id:            uuid.Nil,

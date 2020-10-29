@@ -3,9 +3,10 @@ package journal
 import (
 	"fmt"
 
-	. "github.com/rikchilvers/gledger/shared"
+	"github.com/rikchilvers/gledger/shared"
 )
 
+// Account is the
 type Account struct {
 	Name         string
 	Amount       *Amount
@@ -23,7 +24,7 @@ func (a Account) String() string {
 func (a Account) asString(level int) string {
 	// Print the name of this account at the specified level
 	s := fmt.Sprintf("%s", a.Name)
-	for i := 0; i < level*TabWidth; i++ {
+	for i := 0; i < level*shared.TabWidth; i++ {
 		s = fmt.Sprintf(" %s", s)
 	}
 
@@ -35,6 +36,7 @@ func (a Account) asString(level int) string {
 	return s
 }
 
+// Path creates a : delimited string from the Account's ancestry
 // TODO: set this as a variable from the posting
 func (a Account) Path() string {
 	path := a.Name
@@ -48,6 +50,7 @@ func (a Account) Path() string {
 	}
 }
 
+// NewAccount creates an Account
 func NewAccount(name string) *Account {
 	return &Account{
 		Name:         name,

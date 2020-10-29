@@ -6,17 +6,18 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/rikchilvers/gledger/journal"
+	"github.com/rikchilvers/gledger/journal"
 )
 
-type TransactionHandler = func(t *Transaction, p string) error
+// TransactionHandler is the func commands can use to analyse the journal
+type TransactionHandler = func(t *journal.Transaction, p string) error
 type itemParser = func(t itemType, content []rune) error
 
 // Parser is how gledger reads journal files
 type Parser struct {
 	previousItemType   itemType
-	currentPosting     *Posting
-	currentTransaction *Transaction
+	currentPosting     *journal.Posting
+	currentTransaction *journal.Transaction
 	transactionHandler TransactionHandler
 	journalFiles       []string
 }
@@ -76,7 +77,7 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 		if err != nil {
 			return err
 		}
-		p.currentTransaction = NewTransaction()
+		p.currentTransaction = journal.NewTransaction()
 
 		p.currentTransaction.Date, err = parseDate(content)
 		if err != nil {
@@ -89,11 +90,11 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 
 		switch content[0] {
 		case '!':
-			p.currentTransaction.State = UnclearedState
+			p.currentTransaction.State = journal.UnclearedState
 		case '*':
-			p.currentTransaction.State = ClearedState
+			p.currentTransaction.State = journal.ClearedState
 		default:
-			p.currentTransaction.State = NoState
+			p.currentTransaction.State = journal.NoState
 		}
 	case payeeItem:
 		if p.previousItemType != dateItem && p.previousItemType != stateItem {
@@ -112,7 +113,7 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 		if p.currentPosting != nil {
 			p.currentTransaction.AddPosting(p.currentPosting)
 		}
-		p.currentPosting = NewPosting()
+		p.currentPosting = journal.NewPosting()
 
 		p.currentPosting.Transaction = p.currentTransaction
 
@@ -123,7 +124,7 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 		}
 
 		if p.currentPosting.Amount == nil {
-			p.currentPosting.Amount = NewAmount(0)
+			p.currentPosting.Amount = journal.NewAmount(0)
 		}
 
 		p.currentPosting.Amount.Commodity = string(content)
@@ -133,7 +134,7 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 		}
 
 		if p.currentPosting.Amount == nil {
-			p.currentPosting.Amount = NewAmount(0)
+			p.currentPosting.Amount = journal.NewAmount(0)
 		}
 
 		if err := p.parseAmount(content); err != nil {
