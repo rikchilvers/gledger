@@ -84,8 +84,21 @@ func printAccountsAndQuantities(a journal.Account, depth int) {
 		spaces = fmt.Sprintf(" %s", spaces)
 	}
 	nameAndQuantity := fmt.Sprintf("%20s%s%s", a.Amount.DisplayableQuantity(true), spaces, a.Name)
+
+	// If there is only one child, we don't need to indent, just append it now
+	if len(a.Children) == 1 {
+		// We know this loop will only happen once
+		for child := range a.Children {
+			nameAndQuantity = fmt.Sprintf("%s:%s", nameAndQuantity, child)
+		}
+		fmt.Println(nameAndQuantity)
+		return
+	}
+
+	// Print this account
 	fmt.Println(nameAndQuantity)
 
+	// Descend to children
 	for _, c := range a.SortedChildNames() {
 		printAccountsAndQuantities(*a.Children[c], depth+1)
 	}
