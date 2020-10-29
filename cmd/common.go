@@ -6,7 +6,7 @@ import (
 	"github.com/rikchilvers/gledger/parser"
 )
 
-func parse(cmd parser.Command) error {
+func parse(cmd parser.TransactionHandler) error {
 	if rootJournalPath == "" {
 		// TODO: use viper to read env variable
 		return errors.New("No root journal path provided")

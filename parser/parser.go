@@ -9,7 +9,7 @@ import (
 	. "github.com/rikchilvers/gledger/journal"
 )
 
-type Command = func(t *Transaction) error
+type TransactionHandler = func(t *Transaction) error
 type itemParser = func(t itemType, content []rune) error
 
 // Parser is how gledger reads journal files
@@ -17,16 +17,16 @@ type Parser struct {
 	previousItemType   itemType
 	currentPosting     *Posting
 	currentTransaction *Transaction
-	command            Command
+	transactionHandler TransactionHandler
 }
 
 // NewParser creates a parser (including its journal)
-func NewParser(cmd Command) *Parser {
+func NewParser(t TransactionHandler) *Parser {
 	return &Parser{
 		previousItemType:   -1,
 		currentPosting:     nil,
 		currentTransaction: nil,
-		command:            cmd,
+		transactionHandler: t,
 	}
 }
 
@@ -227,8 +227,8 @@ func (p *Parser) endTransaction() error {
 		return err
 	}
 
-	if p.command != nil {
-		if err = p.command(p.currentTransaction); err != nil {
+	if p.transactionHandler != nil {
+		if err = p.transactionHandler(p.currentTransaction); err != nil {
 			return err
 		}
 	}
