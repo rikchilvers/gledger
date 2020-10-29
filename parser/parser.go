@@ -9,7 +9,7 @@ import (
 	. "github.com/rikchilvers/gledger/journal"
 )
 
-type TransactionHandler = func(t *Transaction) error
+type TransactionHandler = func(t *Transaction, p string) error
 type itemParser = func(t itemType, content []rune) error
 
 // Parser is how gledger reads journal files
@@ -18,6 +18,7 @@ type Parser struct {
 	currentPosting     *Posting
 	currentTransaction *Transaction
 	transactionHandler TransactionHandler
+	journalFiles       []string
 }
 
 // NewParser creates a parser (including its journal)
@@ -27,11 +28,15 @@ func NewParser(t TransactionHandler) *Parser {
 		currentPosting:     nil,
 		currentTransaction: nil,
 		transactionHandler: t,
+		journalFiles:       make([]string, 0, 2),
 	}
 }
 
 // Parse lexes and parses the provided file line by line
 func (p *Parser) Parse(journalPath string) error {
+	p.journalFiles = append(p.journalFiles, journalPath)
+
+	// Begin lexing
 	lexer := newLexer(journalPath, p.parseItem)
 	if err := lexer.lex(); err != nil {
 		// This is the exit point for the lexer's errors
@@ -53,11 +58,18 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 			return err
 		}
 	case includeItem:
+		path := string(content)
+		// Add the file to the slice
+		p.journalFiles = append(p.journalFiles, path)
+
 		lexer := newLexer(string(content), p.parseItem)
 		if err := lexer.lex(); err != nil {
 			// This is the exit point for the lexer's errors
 			return fmt.Errorf("Error at %w", err)
 		}
+
+		// Drop the file from the slice
+		p.journalFiles = p.journalFiles[:1]
 	case dateItem:
 		// This will start a transaction so check if we need to close a previous one
 		err := p.endTransaction()
@@ -228,7 +240,7 @@ func (p *Parser) endTransaction() error {
 	}
 
 	if p.transactionHandler != nil {
-		if err = p.transactionHandler(p.currentTransaction); err != nil {
+		if err = p.transactionHandler(p.currentTransaction, p.journalFiles[len(p.journalFiles)-1]); err != nil {
 			return err
 		}
 	}

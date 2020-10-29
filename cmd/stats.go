@@ -36,6 +36,7 @@ type journalStatistics struct {
 	transactionCount     int
 	uniqueAccounts       map[string]bool
 	uniquePayees         map[string]bool
+	journalFiles         map[string]bool
 }
 
 func newJournalStatistics() journalStatistics {
@@ -45,10 +46,14 @@ func newJournalStatistics() journalStatistics {
 		transactionCount:     0,
 		uniqueAccounts:       make(map[string]bool),
 		uniquePayees:         make(map[string]bool),
+		journalFiles:         make(map[string]bool),
 	}
 }
 
-func (js *journalStatistics) analyseTransaction(t *journal.Transaction) error {
+func (js *journalStatistics) analyseTransaction(t *journal.Transaction, p string) error {
+	// Log the file
+	js.journalFiles[p] = true
+
 	// Increment transaction count
 	js.transactionCount++
 
@@ -75,6 +80,12 @@ func (js *journalStatistics) analyseTransaction(t *journal.Transaction) error {
 }
 
 func (js journalStatistics) report() {
+	// Report the files
+	fmt.Printf("Transactions found in %d files:\n", len(js.journalFiles))
+	for p := range js.journalFiles {
+		fmt.Printf("  %s\n", p)
+	}
+
 	// Report start and end dates
 	fmt.Printf("First transaction:\t%s\n", js.firstTransactionDate.Format(dateLayout))
 	fmt.Printf("Last transaction:\t%s\n", js.lastTransactionDate.Format(dateLayout))
