@@ -69,23 +69,24 @@ func (jb journalBalance) report() {
 }
 
 func printAccountsAndQuantities(a journal.Account, depth int) {
-	const tabWidth int = 2
-
+	// Skip over root
+	// TODO: alert the user that 'root' (or something similar) is reserved for gledger
 	if a.Name == "root" {
-		for _, child := range a.Children {
-			printAccountsAndQuantities(*child, depth+1)
+		for _, c := range a.SortedChildNames() {
+			printAccountsAndQuantities(*a.Children[c], depth+1)
 		}
 		return
 	}
 
 	spaces := ""
+	var tabWidth int = 2
 	for i := 0; i < depth*tabWidth; i++ {
 		spaces = fmt.Sprintf(" %s", spaces)
 	}
 	nameAndQuantity := fmt.Sprintf("%20s%s%s", a.Amount.DisplayableQuantity(true), spaces, a.Name)
 	fmt.Println(nameAndQuantity)
 
-	for _, child := range a.Children {
-		printAccountsAndQuantities(*child, depth+1)
+	for _, c := range a.SortedChildNames() {
+		printAccountsAndQuantities(*a.Children[c], depth+1)
 	}
 }

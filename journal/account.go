@@ -2,6 +2,7 @@ package journal
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/rikchilvers/gledger/shared"
 )
@@ -104,4 +105,14 @@ func (a Account) findChildAndDescend(components []string) (*Account, []string) {
 	}
 	// There are remaining components so return those and the deepest parent
 	return &a, components
+}
+
+// SortedChildNames returns an alphabetically sorted slice of the Account's children's names
+func (a Account) SortedChildNames() []string {
+	names := make([]string, 0, len(a.Children))
+	for name := range a.Children {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }
