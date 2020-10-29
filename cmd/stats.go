@@ -14,8 +14,8 @@ func init() {
 }
 
 var statsCmd = &cobra.Command{
-	Use:          "stats",
-	Aliases:      []string{"statistics", "s"},
+	Use:          "statistics",
+	Aliases:      []string{"stats", "s"},
 	Short:        "Shows statistics about the journal",
 	SilenceUsage: true,
 	Run: func(cmd *cobra.Command, args []string) {
