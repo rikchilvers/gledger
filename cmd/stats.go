@@ -5,6 +5,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/rikchilvers/gledger/journal"
 	"github.com/spf13/cobra"
 )
@@ -87,8 +88,8 @@ func (js journalStatistics) report() {
 	}
 
 	// Report start and end dates
-	fmt.Printf("First transaction:\t%s\n", js.firstTransactionDate.Format(dateLayout))
-	fmt.Printf("Last transaction:\t%s\n", js.lastTransactionDate.Format(dateLayout))
+	fmt.Printf("First transaction:\t%s (%s)\n", js.firstTransactionDate.Format(dateLayout), humanize.Time(js.firstTransactionDate))
+	fmt.Printf("Last transaction:\t%s (%s)\n", js.lastTransactionDate.Format(dateLayout), humanize.Time(js.lastTransactionDate))
 
 	// Report duration
 	duration := js.lastTransactionDate.Sub(js.firstTransactionDate)
