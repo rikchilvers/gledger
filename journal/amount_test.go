@@ -8,13 +8,13 @@ func TestDisplaysPositiveAmount(t *testing.T) {
 	amount.Commodity = "GBP "
 
 	expected := "GBP 42.81"
-	got := amount.displayableQuantity(true)
+	got := amount.DisplayableQuantity(true)
 	if got != expected {
 		t.Fatalf("amount displays incorrectly: expected: %s, got: %s", expected, got)
 	}
 
 	expected = "42.81"
-	got = amount.displayableQuantity(false)
+	got = amount.DisplayableQuantity(false)
 	if got != expected {
 		t.Fatalf("amount displays incorrectly: expected: %s, got: %s", expected, got)
 	}
@@ -26,13 +26,13 @@ func TestDisplaysNegativeAmount(t *testing.T) {
 	amount.Commodity = "£"
 
 	expected := "£-42.81"
-	got := amount.displayableQuantity(true)
+	got := amount.DisplayableQuantity(true)
 	if got != expected {
 		t.Fatalf("amount displays incorrectly: expected: %s, got: %s", expected, got)
 	}
 
 	expected = "-42.81"
-	got = amount.displayableQuantity(false)
+	got = amount.DisplayableQuantity(false)
 	if got != expected {
 		t.Fatalf("amount displays incorrectly: expected: %s, got: %s", expected, got)
 	}
@@ -43,13 +43,13 @@ func TestDisplaysThreeDigitAmounts(t *testing.T) {
 	amount.Commodity = "GBP "
 
 	expected := "GBP 9.81"
-	got := amount.displayableQuantity(true)
+	got := amount.DisplayableQuantity(true)
 	if got != expected {
 		t.Fatalf("amount displays incorrectly: expected: %s, got: %s", expected, got)
 	}
 
 	expected = "9.81"
-	got = amount.displayableQuantity(false)
+	got = amount.DisplayableQuantity(false)
 	if got != expected {
 		t.Fatalf("amount displays incorrectly: expected: %s, got: %s", expected, got)
 	}
@@ -60,13 +60,13 @@ func TestDisplaysTwoDigitAmounts(t *testing.T) {
 	amount.Commodity = "GBP "
 
 	expected := "GBP 0.81"
-	got := amount.displayableQuantity(true)
+	got := amount.DisplayableQuantity(true)
 	if got != expected {
 		t.Fatalf("amount displays incorrectly: expected: %s, got: %s", expected, got)
 	}
 
 	expected = "0.81"
-	got = amount.displayableQuantity(false)
+	got = amount.DisplayableQuantity(false)
 	if got != expected {
 		t.Fatalf("amount displays incorrectly: expected: %s, got: %s", expected, got)
 	}
@@ -77,13 +77,13 @@ func TestDisplaysOneDigitAmounts(t *testing.T) {
 	amount.Commodity = "GBP "
 
 	expected := "GBP 0.09"
-	got := amount.displayableQuantity(true)
+	got := amount.DisplayableQuantity(true)
 	if got != expected {
 		t.Fatalf("amount displays incorrectly: expected: %s, got: %s", expected, got)
 	}
 
 	expected = "0.09"
-	got = amount.displayableQuantity(false)
+	got = amount.DisplayableQuantity(false)
 	if got != expected {
 		t.Fatalf("amount displays incorrectly: expected: %s, got: %s", expected, got)
 	}

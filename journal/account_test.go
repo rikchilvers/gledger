@@ -30,7 +30,7 @@ func TestFindOrCreate(t *testing.T) {
 	root := NewAccount("root")
 	components := []string{"assets", "current"}
 
-	current := root.findOrCreateAccount(components)
+	current := root.FindOrCreateAccount(components)
 
 	if current == nil {
 		t.Fatalf("account was not created")
@@ -54,14 +54,14 @@ func TestFindOrCreate(t *testing.T) {
 
 	// Add a second account (branch at assets)
 	components[1] = "savings"
-	savings := root.findOrCreateAccount(components)
+	savings := root.FindOrCreateAccount(components)
 
 	if len(savings.Parent.Children) != 2 {
 		t.Fatalf("created account's parent does not have enough children")
 	}
 
 	// Search for an account
-	searchResult := root.findOrCreateAccount(components)
+	searchResult := root.FindOrCreateAccount(components)
 
 	if searchResult.Name != "savings" {
 		t.Fatalf("search returns incorrect account")
@@ -73,7 +73,7 @@ func TestAccountPathGeneration(t *testing.T) {
 	components := []string{"assets", "current"}
 	account := newAccountWithChildren(components, nil)
 
-	if account.path() != "assets:current" {
+	if account.Path() != "assets:current" {
 		t.Fatalf("account generates incorrect path")
 	}
 }
