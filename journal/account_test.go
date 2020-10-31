@@ -89,3 +89,66 @@ func TestAccountPrinting(t *testing.T) {
 		t.Fatalf("account printing does not work\n\texpected %s\nbut got %s", expected, result)
 	}
 }
+
+func TestPruning(t *testing.T) {
+	createRoot := func() *Account {
+		componentsA := []string{"A1", "B1", "C1"}
+		componentsB := []string{"A1", "B2"}
+		componentsC := []string{"A2", "B3"}
+		root := NewAccount("root")
+		root.FindOrCreateAccount(componentsA)
+		root.FindOrCreateAccount(componentsB)
+		root.FindOrCreateAccount(componentsC)
+		return root
+	}
+
+	// For depth zero, we shouldn't see any accounts
+	depthZeroRoot := createRoot()
+	depthZeroRoot.PruneChildren(0, 0)
+	if len(depthZeroRoot.Children) != 0 {
+		t.Fatalf("pruning failed")
+	}
+
+	// For depth one, we should only see A1 and A2
+	depthOneRoot := createRoot()
+	depthOneRoot.PruneChildren(1, 0)
+	if len(depthOneRoot.Children) != 2 {
+		t.Fatalf("pruning failed")
+	}
+	for _, child := range depthOneRoot.Children {
+		if len(child.Children) > 0 {
+			t.Fatalf("pruning failed")
+		}
+	}
+
+	// For depth two, we should see all but C1
+	depthTwoRoot := createRoot()
+	depthTwoRoot.PruneChildren(2, 0)
+	// Check A1 and A2
+	if len(depthTwoRoot.Children) != 2 {
+		t.Fatalf("pruning failed")
+	}
+
+	for name, child := range depthTwoRoot.Children {
+		// Check B1 and B2
+		if name == "A1" {
+			if len(child.Children) != 2 {
+				t.Fatalf("pruning failed")
+			}
+		}
+
+		// Check B3
+		if name == "A2" {
+			if len(child.Children) != 1 {
+				t.Fatalf("pruning failed")
+			}
+		}
+
+		// Check C1 does not exist
+		for _, grandChild := range child.Children {
+			if len(grandChild.Children) != 0 {
+				t.Fatalf("pruning failed")
+			}
+		}
+	}
+}

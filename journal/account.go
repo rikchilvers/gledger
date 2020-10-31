@@ -116,3 +116,16 @@ func (a Account) SortedChildNames() []string {
 	sort.Strings(names)
 	return names
 }
+
+// PruneChildren removes child nodes beneath a certain depth
+func (a *Account) PruneChildren(targetDepth, currentDepth int) {
+	// If we've reached the target depth, remove all children
+	if currentDepth == targetDepth {
+		for key := range a.Children {
+			delete(a.Children, key)
+		}
+	}
+	for _, child := range a.Children {
+		child.PruneChildren(targetDepth, currentDepth+1)
+	}
+}
