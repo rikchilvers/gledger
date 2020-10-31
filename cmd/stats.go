@@ -21,7 +21,7 @@ var statsCmd = &cobra.Command{
 	SilenceUsage: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		js := newJournalStatistics()
-		if err := parse(js.analyseTransaction); err != nil {
+		if err := parse(js.transactionHandler); err != nil {
 			fmt.Println(err)
 			return
 		}
@@ -51,9 +51,9 @@ func newJournalStatistics() journalStatistics {
 	}
 }
 
-func (js *journalStatistics) analyseTransaction(t *journal.Transaction, p string) error {
+func (js *journalStatistics) transactionHandler(t *journal.Transaction, path string) error {
 	// Log the file
-	js.journalFiles[p] = true
+	js.journalFiles[path] = true
 
 	// Increment transaction count
 	js.transactionCount++

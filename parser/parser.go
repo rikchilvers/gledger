@@ -9,8 +9,9 @@ import (
 	"github.com/rikchilvers/gledger/journal"
 )
 
-// TransactionHandler is the func commands can use to analyse the journal
-type TransactionHandler = func(t *journal.Transaction, p string) error
+// TransactionHandler is the func commands can use to analyse the journal.
+// Takes a Transaction and a path to the file where this Transaction was found.
+type TransactionHandler = func(t *journal.Transaction, path string) error
 type itemParser = func(t itemType, content []rune) error
 
 // Parser is how gledger reads journal files

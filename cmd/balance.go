@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/rikchilvers/gledger/journal"
 	"github.com/spf13/cobra"
@@ -19,7 +18,7 @@ var balanceCmd = &cobra.Command{
 	SilenceUsage: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		jb := newJournalBalance()
-		if err := parse(jb.analyseTransaction); err != nil {
+		if err := parse(jb.transactionHandler); err != nil {
 			fmt.Println(err)
 			return
 		}
@@ -37,27 +36,11 @@ func newJournalBalance() journalBalance {
 	}
 }
 
-func (jb *journalBalance) analyseTransaction(t *journal.Transaction, p string) error {
-	// Add postings to accounts
-	for _, p := range t.Postings {
-		// Wire up the account for the posting
-		p.Account = jb.rootAccount.FindOrCreateAccount(strings.Split(p.AccountPath, ":"))
-
-		// Apply amount to each the account and all its ancestors
-		account := p.Account
-		for {
-			if account.Parent == nil {
-				break
-			}
-			account.Amount.Quantity += p.Amount.Quantity
-			account = account.Parent
-		}
-
-		// Tie up references
-		p.Account.Postings = append(p.Account.Postings, p)
-		p.Account.Transactions = append(p.Account.Transactions, t)
+func (jb *journalBalance) transactionHandler(t *journal.Transaction, path string) error {
+	// Defer to the common transaction linker
+	if err := linkTransaction(jb.rootAccount, t, path); err != nil {
+		return err
 	}
-
 	return nil
 }
 
