@@ -131,3 +131,33 @@ func (a *Account) PruneChildren(targetDepth, currentDepth int) {
 		child.PruneChildren(targetDepth, currentDepth+1)
 	}
 }
+
+
+func (a Account) Leaves() []*Account {
+	found := make([]*Account, 0, 5)
+	matcher := func(a Account) bool {
+		return len(a.Children) == 0
+	}
+	a.FindAccountsPointer(matcher, &found)
+	return found
+}
+
+func (a Account) findAccounts(matcher func(a Account) bool, found []*Account) []*Account {
+	if matcher(a) {
+		found = append(found, &a)
+	}
+
+	// Descend to this Account's children
+	for _, child := range a.Children {
+		found = append(found, child.findAccounts(matcher, found)...)
+	}
+
+	return found
+}
+
+func (a Account) FindAccounts(matcher func(a Account) bool) []*Account {
+	found := make([]*Account, 0, 5)
+	found = append(found, a.findAccounts(matcher, found)...)
+	return found
+}
+
