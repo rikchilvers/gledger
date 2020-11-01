@@ -133,6 +133,26 @@ func (a *Account) PruneChildren(targetDepth, currentDepth int) {
 }
 
 
+// FlattenedTree walks the descendents of this Account
+// and returns a string of its structure in flattened tree form
+func (a Account) FlattenedTree() string {
+	return a.flattenedTree("")
+}
+
+func (a Account) flattenedTree(current string) string {
+	// If this account has no children, add its path
+	if len(a.Children) == 0 {
+		return fmt.Sprintf("%s%s\n", current, a.Path())
+	}
+
+	// If it does have children, descend to them
+	for _, childName := range a.SortedChildNames() {
+		current = a.Children[childName].flattenedTree(current)
+	}
+
+	return current
+}
+
 func (a Account) Leaves() []*Account {
 	matcher := func(a Account) bool {
 		return len(a.Children) == 0
