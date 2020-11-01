@@ -32,7 +32,7 @@ type journalBalance struct {
 
 func newJournalBalance() journalBalance {
 	return journalBalance{
-		rootAccount: journal.NewAccount("root"),
+		rootAccount: journal.NewAccount(journal.RootID),
 	}
 }
 
@@ -54,7 +54,7 @@ func (jb journalBalance) report() {
 func printAccountsAndQuantities(a journal.Account, depth int) {
 	// Skip over root
 	// TODO: alert the user that 'root' (or something similar) is reserved for gledger
-	if a.Name == "root" {
+	if a.Name == journal.RootID {
 		for _, c := range a.SortedChildNames() {
 			printAccountsAndQuantities(*a.Children[c], depth+1)
 		}

@@ -9,7 +9,7 @@ type journal struct {
 
 func newJournal() *journal {
 	return &journal{
-		rootAccount:  NewAccount("root"),
+		rootAccount:  NewAccount(RootID),
 		transactions: make([]*Transaction, 0, 1024),
 	}
 }

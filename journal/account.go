@@ -7,6 +7,8 @@ import (
 	"github.com/rikchilvers/gledger/shared"
 )
 
+const RootID string = "_root_"
+
 // Account is the
 type Account struct {
 	Name         string
@@ -43,7 +45,7 @@ func (a Account) Path() string {
 	path := a.Name
 	current := a
 	for {
-		if current.Parent == nil {
+		if current.Parent == nil || current.Parent.Name == RootID {
 			return path
 		}
 		path = fmt.Sprintf("%s:%s", current.Parent.Name, path)

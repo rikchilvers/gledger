@@ -27,7 +27,7 @@ func TestNewAccountWithChildren(t *testing.T) {
 }
 
 func TestFindOrCreate(t *testing.T) {
-	root := NewAccount("root")
+	root := NewAccount(RootID)
 	components := []string{"assets", "current"}
 
 	current := root.FindOrCreateAccount(components)
@@ -48,7 +48,7 @@ func TestFindOrCreate(t *testing.T) {
 		t.Fatalf("created account has incorrect parent")
 	}
 
-	if current.Parent.Parent.Name != "root" {
+	if current.Parent.Parent.Name != RootID {
 		t.Fatalf("created account has incorrect grandparent")
 	}
 
