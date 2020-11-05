@@ -132,6 +132,53 @@ func (a *Account) PruneChildren(targetDepth, currentDepth int) {
 	}
 }
 
+// Tree walks the descendents of this Account
+// and returns a string of its structure in tree form
+func (a Account) Tree() string {
+	current := ""
+
+	for _, childName := range a.SortedChildNames() {
+		current = a.Children[childName].tree(current, 0, len(a.Children) == 0)
+	}
+
+	return fmt.Sprintln(current)
+}
+
+func (a Account) tree(current string, currentDepth int, isOnlyChild bool) string {
+	// If we're an only child, we need to print :name
+	if isOnlyChild {
+		return fmt.Sprintf("%s:%s", current, a.Name)
+	}
+
+	// We know we have siblings, so we need to
+	// add a newline and some spaces
+	// unless this is the first account to be printed
+
+	if len(current) > 0 {
+		spaces := ""
+		var tabWidth int = 2
+		for i := 0; i < currentDepth*tabWidth; i++ {
+			spaces = fmt.Sprintf(" %s", spaces)
+		}
+		current = fmt.Sprintf("%s\n%s%s", current, spaces, a.Name)
+	} else {
+		current = a.Name
+	}
+
+	if len(a.Children) == 0 {
+		return current
+	}
+
+	isOnlyChild = false
+	if len(a.Children) == 1 {
+		isOnlyChild = true
+	}
+
+	for _, childName := range a.SortedChildNames() {
+		current = a.Children[childName].tree(current, currentDepth+1, isOnlyChild)
+	}
+	return current
+}
 
 // FlattenedTree walks the descendents of this Account
 // and returns a string of its structure in flattened tree form
