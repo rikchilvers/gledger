@@ -5,6 +5,17 @@ import (
 	"testing"
 )
 
+func createRoot() *Account {
+	componentsA := []string{"A1", "B1", "C1"}
+	componentsB := []string{"A1", "B2"}
+	componentsC := []string{"A2", "B3"}
+	root := NewAccount(RootID)
+	root.FindOrCreateAccount(componentsA)
+	root.FindOrCreateAccount(componentsB)
+	root.FindOrCreateAccount(componentsC)
+	return root
+}
+
 func TestNewAccountWithChildren(t *testing.T) {
 	components := []string{"assets", "current"}
 	account := newAccountWithChildren(components, nil)
@@ -90,18 +101,76 @@ func TestAccountPrinting(t *testing.T) {
 	}
 }
 
-func TestPruning(t *testing.T) {
-	createRoot := func() *Account {
-		componentsA := []string{"A1", "B1", "C1"}
-		componentsB := []string{"A1", "B2"}
-		componentsC := []string{"A2", "B3"}
-		root := NewAccount("root")
-		root.FindOrCreateAccount(componentsA)
-		root.FindOrCreateAccount(componentsB)
-		root.FindOrCreateAccount(componentsC)
-		return root
+func generateAccountTree() *Account {
+	/*
+		Assets
+			Current
+		Expenses
+			Fixed
+				Rent
+				Water
+			Fun
+				Dining
+	*/
+
+	componentsA := []string{"Assets", "Current"}
+	componentsB := []string{"Expenses", "Fixed", "Rent"}
+	componentsC := []string{"Expenses", "Fixed", "Water"}
+	componentsD := []string{"Expenses", "Fun", "Dining"}
+	root := NewAccount(RootID)
+	root.FindOrCreateAccount(componentsA)
+	root.FindOrCreateAccount(componentsB)
+	root.FindOrCreateAccount(componentsC)
+	root.FindOrCreateAccount(componentsD)
+
+	return root
+}
+
+func TestTree(t *testing.T) {
+	expected := "Assets:Current\nExpenses\n  Fixed\n    Rent\n    Water\n  Fun:Dining\n"
+	got := generateAccountTree().Tree()
+
+	if got != expected {
+		t.Fatalf("\nExpected:\n%s\nGot:\n%s", expected, got)
+	}
+}
+
+func TestFlattenedTree(t *testing.T) {
+
+	p := "£123  "
+	expected := fmt.Sprintf("%sAssets:Current\n%sExpenses:Fixed:Rent\n%sExpenses:Fixed:Water\n%sExpenses:Fun:Dining\n", p, p, p, p)
+	prepender := func(a Account) string { return p }
+	got := generateAccountTree().FlattenedTree(prepender)
+
+	if got != expected {
+		t.Fatalf("\nExpected:\n%s\nGot:\n%s", expected, got)
+	}
+}
+
+func TestMatcher(t *testing.T) {
+	root := createRoot()
+	leaves := root.Leaves()
+
+	for name, child := range root.Children {
+		fmt.Println(name)
+		for name, grandchild := range child.Children {
+			fmt.Println(name)
+			for name := range grandchild.Children {
+				fmt.Println(name)
+			}
+		}
 	}
 
+	if len(leaves) != 3 {
+		fmt.Println("\n>>>")
+		for _, a := range leaves {
+			fmt.Println(a.Name)
+		}
+		t.Fatalf("Incorrect number of leaves: expected %d, got %d", 3, len(leaves))
+	}
+}
+
+func TestPruning(t *testing.T) {
 	// For depth zero, we shouldn't see any accounts
 	depthZeroRoot := createRoot()
 	depthZeroRoot.PruneChildren(0, 0)
