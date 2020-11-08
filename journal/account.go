@@ -135,6 +135,9 @@ func (a *Account) PruneChildren(targetDepth, currentDepth int) {
 // Tree walks the descendents of this Account
 // and returns a string of its structure in tree form
 func (a Account) Tree(prepender func(a Account) string) string {
+	if prepender == nil {
+		prepender = func(a Account) string { return "" }
+	}
 	c := newTreeContext(prepender)
 
 	for _, childName := range a.SortedChildNames() {
@@ -233,6 +236,9 @@ func (a Account) tree(c treeContext) treeContext {
 // FlattenedTree walks the descendents of this Account
 // and returns a string of its structure in flattened tree form
 func (a Account) FlattenedTree(prepender func(a Account) string) string {
+	if prepender == nil {
+		prepender = func(a Account) string { return "" }
+	}
 	return a.flattenedTree(prepender, "")
 }
 
