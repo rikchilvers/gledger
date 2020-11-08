@@ -141,7 +141,7 @@ func (a Account) Tree(prepender func(a Account) string) string {
 		c = a.Children[childName].tree(c)
 	}
 
-	return fmt.Sprintln(c.tree)
+	return c.tree
 }
 
 type treeContext struct {
@@ -180,45 +180,51 @@ func (a Account) tree(c treeContext) treeContext {
 			c.collapsedAccounts = fmt.Sprintf("%s:%s", c.collapsedAccounts, a.Name)
 			c.isOnlyChild = true
 		} else {
-			// If this only child has no children or it has more than one child
+			// If this only child has 0 or >1 children
 			// we need to add the line to the tree + the prepended string
-
-			// If this is the first account, don't add a newline
+			spaces := calculateSpaces(c.collapsedAccountsDepth)
 			if len(c.tree) == 0 {
-				c.tree = fmt.Sprintf("%s%s%s:%s", c.prepender(a), calculateSpaces(c.collapsedAccountsDepth), c.collapsedAccounts, a.Name)
+				// If this is the first account, don't add a newline
+				c.tree = fmt.Sprintf("%s%s%s:%s", c.prepender(a), spaces, c.collapsedAccounts, a.Name)
 			} else {
-				c.tree = fmt.Sprintf("%s\n%s%s%s:%s", c.tree, c.prepender(a), calculateSpaces(c.collapsedAccountsDepth), c.collapsedAccounts, a.Name)
+				c.tree = fmt.Sprintf("%s\n%s%s%s:%s", c.tree, c.prepender(a), spaces, c.collapsedAccounts, a.Name)
 			}
-
 			c.collapsedAccounts = ""
 			c.isOnlyChild = false
-			c.collapsedAccountsDepth = c.depth
 		}
 
-		return c
-	}
-
-	// At this point, we know this account has siblings
-
-	if len(a.Children) == 1 {
-		// If we have one child, we should add ourselves to the collapsedAccounts line
-		if len(c.collapsedAccounts) == 0 {
-			// If we're the first only child, don't add a colon
-			c.collapsedAccounts = fmt.Sprintf(a.Name)
-		} else {
-			c.collapsedAccounts = fmt.Sprintf("%s:%s", c.collapsedAccounts, a.Name)
+		// Descend to children
+		for _, childName := range a.SortedChildNames() {
+			c = a.Children[childName].tree(c)
 		}
-
-		c.isOnlyChild = true // let the Account's child know it has no siblings
 	} else {
-		// If we have no children, we should add ourselves to the tree
-		c.tree = fmt.Sprintf("%s\n%s%s%s", c.tree, c.prepender(a), calculateSpaces(c.depth), a.Name)
-		c.isOnlyChild = false // let the Account's children know they have siblings
-	}
+		// At this point, we know this account has siblings
+		if len(a.Children) == 1 {
+			// If we have one child, we should add ourselves to the collapsedAccounts line
+			if len(c.collapsedAccounts) == 0 {
+				// If we're the first only child, don't add a colon
+				c.collapsedAccounts = fmt.Sprintf("%s%s", calculateSpaces(c.depth), a.Name)
+			} else {
+				c.collapsedAccounts = fmt.Sprintf("%s:%s", c.collapsedAccounts, a.Name)
+			}
+			c.isOnlyChild = true // let the Account's child know it has no siblings
+		} else {
+			// If we have 0 or >1 children, we should add ourselves to the tree
+			if len(c.tree) == 0 {
+				// If this is the first account, don't add a newline
+				c.tree = fmt.Sprintf("%s%s%s", c.prepender(a), calculateSpaces(c.depth), a.Name)
+			} else {
+				c.tree = fmt.Sprintf("%s\n%s%s%s", c.tree, c.prepender(a), calculateSpaces(c.depth), a.Name)
+			}
+			c.isOnlyChild = false // let the Account's children know they have siblings
+		}
 
-	c.depth++
-	for _, childName := range a.SortedChildNames() {
-		c = a.Children[childName].tree(c)
+		// Descend to children at a depth +1
+		c.depth++
+		for _, childName := range a.SortedChildNames() {
+			c = a.Children[childName].tree(c)
+		}
+		// Return to previous depth
 		c.depth--
 	}
 	return c
