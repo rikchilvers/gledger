@@ -134,50 +134,94 @@ func (a *Account) PruneChildren(targetDepth, currentDepth int) {
 
 // Tree walks the descendents of this Account
 // and returns a string of its structure in tree form
-func (a Account) Tree() string {
-	current := ""
+func (a Account) Tree(prepender func(a Account) string) string {
+	c := newTreeContext(prepender)
 
 	for _, childName := range a.SortedChildNames() {
-		current = a.Children[childName].tree(current, 0, len(a.Children) == 0)
+		c = a.Children[childName].tree(c)
 	}
 
-	return fmt.Sprintln(current)
+	return fmt.Sprintln(c.tree)
 }
 
-func (a Account) tree(current string, currentDepth int, isOnlyChild bool) string {
-	// If we're an only child, we need to print :name
-	if isOnlyChild {
-		return fmt.Sprintf("%s:%s", current, a.Name)
+type treeContext struct {
+	prepender              func(a Account) string
+	depth                  int
+	isOnlyChild            bool
+	collapsedAccounts      string
+	collapsedAccountsDepth int
+	tree                   string
+}
+
+func newTreeContext(p func(a Account) string) treeContext {
+	return treeContext{
+		prepender: p,
 	}
+}
 
-	// We know we have siblings, so we need to
-	// add a newline and some spaces
-	// unless this is the first account to be printed
-
-	if len(current) > 0 {
+// We keep track of the current line for collapsed only children
+// TODO: return two strings (tree, collapsedAccountsLine)
+// TODO: enable prepender to be nil
+func (a Account) tree(c treeContext) treeContext {
+	calculateSpaces := func(depth int) string {
 		spaces := ""
 		var tabWidth int = 2
-		for i := 0; i < currentDepth*tabWidth; i++ {
+		for i := 0; i < depth*tabWidth; i++ {
 			spaces = fmt.Sprintf(" %s", spaces)
 		}
-		current = fmt.Sprintf("%s\n%s%s", current, spaces, a.Name)
-	} else {
-		current = a.Name
+		return spaces
 	}
 
-	if len(a.Children) == 0 {
-		return current
+	// Only children are a special case because they are collapsed to a single line
+	// For this to work with the prepender, we keep track of it separately from the tree
+	// until we reach a leaf, where we can rejoin the tree
+	if c.isOnlyChild {
+		if len(a.Children) == 1 {
+			c.collapsedAccounts = fmt.Sprintf("%s:%s", c.collapsedAccounts, a.Name)
+			c.isOnlyChild = true
+		} else {
+			// If this only child has no children or it has more than one child
+			// we need to add the line to the tree + the prepended string
+
+			// If this is the first account, don't add a newline
+			if len(c.tree) == 0 {
+				c.tree = fmt.Sprintf("%s%s%s:%s", c.prepender(a), calculateSpaces(c.collapsedAccountsDepth), c.collapsedAccounts, a.Name)
+			} else {
+				c.tree = fmt.Sprintf("%s\n%s%s%s:%s", c.tree, c.prepender(a), calculateSpaces(c.collapsedAccountsDepth), c.collapsedAccounts, a.Name)
+			}
+
+			c.collapsedAccounts = ""
+			c.isOnlyChild = false
+			c.collapsedAccountsDepth = c.depth
+		}
+
+		return c
 	}
 
-	isOnlyChild = false
+	// At this point, we know this account has siblings
+
 	if len(a.Children) == 1 {
-		isOnlyChild = true
+		// If we have one child, we should add ourselves to the collapsedAccounts line
+		if len(c.collapsedAccounts) == 0 {
+			// If we're the first only child, don't add a colon
+			c.collapsedAccounts = fmt.Sprintf(a.Name)
+		} else {
+			c.collapsedAccounts = fmt.Sprintf("%s:%s", c.collapsedAccounts, a.Name)
+		}
+
+		c.isOnlyChild = true // let the Account's child know it has no siblings
+	} else {
+		// If we have no children, we should add ourselves to the tree
+		c.tree = fmt.Sprintf("%s\n%s%s%s", c.tree, c.prepender(a), calculateSpaces(c.depth), a.Name)
+		c.isOnlyChild = false // let the Account's children know they have siblings
 	}
 
+	c.depth++
 	for _, childName := range a.SortedChildNames() {
-		current = a.Children[childName].tree(current, currentDepth+1, isOnlyChild)
+		c = a.Children[childName].tree(c)
+		c.depth--
 	}
-	return current
+	return c
 }
 
 // FlattenedTree walks the descendents of this Account

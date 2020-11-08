@@ -127,8 +127,10 @@ func generateAccountTree() *Account {
 }
 
 func TestTree(t *testing.T) {
-	expected := "Assets:Current\nExpenses\n  Fixed\n    Rent\n    Water\n  Fun:Dining\n"
-	got := generateAccountTree().Tree()
+	p := "£123  "
+	expected := fmt.Sprintf("%sAssets:Current\n%sExpenses\n%s  Fixed\n%s    Rent\n%s    Water\n%s  Fun:Dining\n", p, p, p, p, p, p)
+	prepender := func(a Account) string { return p }
+	got := generateAccountTree().Tree(prepender)
 
 	if got != expected {
 		t.Fatalf("\nExpected:\n%s\nGot:\n%s", expected, got)
