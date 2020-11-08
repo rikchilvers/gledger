@@ -5,15 +5,82 @@ import (
 	"testing"
 )
 
-func createRoot() *Account {
-	componentsA := []string{"A1", "B1", "C1"}
-	componentsB := []string{"A1", "B2"}
-	componentsC := []string{"A2", "B3"}
+func createRoot() (a *Account, f, t string) {
+	/* Full
+	A0
+		A1a
+		A1b
+			A2
+				A3
+	E0
+		E1a
+			E2a
+				E3a
+				E3b
+		E1b
+			E2b
+	I0
+		I1
+	*/
+
+	/* Flattened
+	A0:A1a
+	A0:A1b:A2:A3
+	E0:E1a:E2a:E3a
+	E0:E1a:E2a:E3b
+	E0:E1b:E2b
+	I0:I1
+	*/
+	f = `A0:A1a
+A0:A1b:A2:A3
+E0:E1a:E2a:E3a
+E0:E1a:E2a:E3b
+E0:E1b:E2b
+I0:I1`
+
+	/* Tree
+	A0
+		A1a
+		A1b:A2:A3
+	E0
+		E1a:E2a
+			E3a
+			E3b
+		E1b:E2b
+	I0:I1
+	*/
+	t = `A0
+	A1a
+	A1b:A2:A3
+E0
+	E1a:E2a
+		E3a
+		E3b
+	E1b:E2b
+I0:I1`
+
+	/* Leaves
+	A1a, A3
+	E3a, E3b
+	E2b
+	I1
+	*/
+
+	componentsAa := []string{"A0", "A1a"}
+	componentsAb := []string{"A0", "A1b", "A2", "A3"}
+	componentsEa := []string{"E0", "E1a", "E2a", "E3a"}
+	componentsEb := []string{"E0", "E1a", "E2a", "E3b"}
+	componentsEc := []string{"E0", "E1b", "E2b"}
+	componentsIa := []string{"I0", "I1"}
 	root := NewAccount(RootID)
-	root.FindOrCreateAccount(componentsA)
-	root.FindOrCreateAccount(componentsB)
-	root.FindOrCreateAccount(componentsC)
-	return root
+	root.FindOrCreateAccount(componentsAa)
+	root.FindOrCreateAccount(componentsAb)
+	root.FindOrCreateAccount(componentsEa)
+	root.FindOrCreateAccount(componentsEb)
+	root.FindOrCreateAccount(componentsEc)
+	root.FindOrCreateAccount(componentsIa)
+
+	return root, f, t
 }
 
 func TestNewAccountWithChildren(t *testing.T) {
@@ -78,6 +145,11 @@ func TestFindOrCreate(t *testing.T) {
 		t.Fatalf("search returns incorrect account")
 	}
 
+	components = []string{"expenses", "groceries"}
+	root.FindOrCreateAccount(components)
+	if len(root.Children) != 2 {
+		t.Fatalf("root does not have enough children")
+	}
 }
 
 func TestAccountPathGeneration(t *testing.T) {
@@ -128,9 +200,18 @@ func generateAccountTree() *Account {
 
 func TestTree(t *testing.T) {
 	p := "£123  "
-	expected := fmt.Sprintf("%sAssets:Current\n%sExpenses\n%s  Fixed\n%s    Rent\n%s    Water\n%s  Fun:Dining\n", p, p, p, p, p, p)
+	expected := `£123  A0
+£123    A1a
+£123    A1b:A2:A3
+£123  E0
+£123    E1a:E2a
+£123      E3a
+£123      E3b
+£123    E1b:E2b
+£123  I0:I1`
 	prepender := func(a Account) string { return p }
-	got := generateAccountTree().Tree(prepender)
+	root, _, _ := createRoot()
+	got := root.Tree(prepender)
 
 	if got != expected {
 		t.Fatalf("\nExpected:\n%s\nGot:\n%s", expected, got)
@@ -150,8 +231,9 @@ func TestFlattenedTree(t *testing.T) {
 }
 
 func TestMatcher(t *testing.T) {
-	root := createRoot()
+	root, _, _ := createRoot()
 	leaves := root.Leaves()
+	expected := 6
 
 	for name, child := range root.Children {
 		fmt.Println(name)
@@ -163,61 +245,59 @@ func TestMatcher(t *testing.T) {
 		}
 	}
 
-	if len(leaves) != 3 {
+	if len(leaves) != expected {
 		fmt.Println("\n>>>")
 		for _, a := range leaves {
 			fmt.Println(a.Name)
 		}
-		t.Fatalf("Incorrect number of leaves: expected %d, got %d", 3, len(leaves))
+		t.Fatalf("Incorrect number of leaves: expected %d, got %d", expected, len(leaves))
 	}
 }
 
 func TestPruning(t *testing.T) {
 	// For depth zero, we shouldn't see any accounts
-	depthZeroRoot := createRoot()
-	depthZeroRoot.PruneChildren(0, 0)
-	if len(depthZeroRoot.Children) != 0 {
-		t.Fatalf("pruning failed")
+	root, _, _ := createRoot()
+	root.PruneChildren(0, 0)
+	expected := 0
+	got := len(root.Children)
+	if got != expected {
+		t.Fatalf("pruning failed: expected %d, got %d", expected, got)
 	}
 
 	// For depth one, we should only see A1 and A2
-	depthOneRoot := createRoot()
-	depthOneRoot.PruneChildren(1, 0)
-	if len(depthOneRoot.Children) != 2 {
-		t.Fatalf("pruning failed")
+	root, _, _ = createRoot()
+	root.PruneChildren(1, 0)
+	expected = 3
+	got = len(root.Children)
+	if got != expected {
+		t.Fatalf("pruning failed: expected %d, got %d", expected, got)
 	}
-	for _, child := range depthOneRoot.Children {
+	for _, child := range root.Children {
 		if len(child.Children) > 0 {
 			t.Fatalf("pruning failed")
 		}
 	}
 
 	// For depth two, we should see all but C1
-	depthTwoRoot := createRoot()
-	depthTwoRoot.PruneChildren(2, 0)
+	root, _, _ = createRoot()
+	root.PruneChildren(2, 0)
+	expected = 3
+	got = len(root.Children)
 	// Check A1 and A2
-	if len(depthTwoRoot.Children) != 2 {
-		t.Fatalf("pruning failed")
+	if got != expected {
+		fmt.Println(root.Tree(nil))
+		t.Fatalf("pruning failed: expected %d, got %d", expected, got)
 	}
 
-	for name, child := range depthTwoRoot.Children {
-		// Check B1 and B2
-		if name == "A1" {
+	for name, child := range root.Children {
+		if name == "A0" || name == "E0" {
 			if len(child.Children) != 2 {
 				t.Fatalf("pruning failed")
 			}
 		}
 
-		// Check B3
-		if name == "A2" {
+		if name == "I0" {
 			if len(child.Children) != 1 {
-				t.Fatalf("pruning failed")
-			}
-		}
-
-		// Check C1 does not exist
-		for _, grandChild := range child.Children {
-			if len(grandChild.Children) != 0 {
 				t.Fatalf("pruning failed")
 			}
 		}
