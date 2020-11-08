@@ -173,31 +173,6 @@ func TestAccountPrinting(t *testing.T) {
 	}
 }
 
-func generateAccountTree() *Account {
-	/*
-		Assets
-			Current
-		Expenses
-			Fixed
-				Rent
-				Water
-			Fun
-				Dining
-	*/
-
-	componentsA := []string{"Assets", "Current"}
-	componentsB := []string{"Expenses", "Fixed", "Rent"}
-	componentsC := []string{"Expenses", "Fixed", "Water"}
-	componentsD := []string{"Expenses", "Fun", "Dining"}
-	root := NewAccount(RootID)
-	root.FindOrCreateAccount(componentsA)
-	root.FindOrCreateAccount(componentsB)
-	root.FindOrCreateAccount(componentsC)
-	root.FindOrCreateAccount(componentsD)
-
-	return root
-}
-
 func TestTree(t *testing.T) {
 	p := "£123  "
 	expected := `£123  A0
@@ -219,14 +194,12 @@ func TestTree(t *testing.T) {
 }
 
 func TestFlattenedTree(t *testing.T) {
-
-	p := "£123  "
-	expected := fmt.Sprintf("%sAssets:Current\n%sExpenses:Fixed:Rent\n%sExpenses:Fixed:Water\n%sExpenses:Fun:Dining\n", p, p, p, p)
-	prepender := func(a Account) string { return p }
-	got := generateAccountTree().FlattenedTree(prepender)
+	prepender := func(a Account) string { return "" }
+	root, expected, _ := createRoot()
+	got := root.FlattenedTree(prepender)
 
 	if got != expected {
-		t.Fatalf("\nExpected:\n%s\nGot:\n%s", expected, got)
+		t.Fatalf("\nExpected:\n'%s'\nGot:\n'%s'", expected, got)
 	}
 }
 
@@ -235,21 +208,7 @@ func TestMatcher(t *testing.T) {
 	leaves := root.Leaves()
 	expected := 6
 
-	for name, child := range root.Children {
-		fmt.Println(name)
-		for name, grandchild := range child.Children {
-			fmt.Println(name)
-			for name := range grandchild.Children {
-				fmt.Println(name)
-			}
-		}
-	}
-
 	if len(leaves) != expected {
-		fmt.Println("\n>>>")
-		for _, a := range leaves {
-			fmt.Println(a.Name)
-		}
 		t.Fatalf("Incorrect number of leaves: expected %d, got %d", expected, len(leaves))
 	}
 }
