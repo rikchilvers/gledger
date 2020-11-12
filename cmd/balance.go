@@ -8,8 +8,11 @@ import (
 )
 
 func init() {
+	balanceCmd.Flags().BoolVarP(&flattenTree, "flat", "l", false, "show accounts as a flat list")
 	rootCmd.AddCommand(balanceCmd)
 }
+
+var flattenTree bool
 
 var balanceCmd = &cobra.Command{
 	Use:          "balance",
@@ -45,44 +48,21 @@ func (jb *journalBalance) transactionHandler(t *journal.Transaction, path string
 }
 
 func (jb journalBalance) report() {
-	printAccountsAndQuantities(*jb.rootAccount, 0)
+	prepender := func(a journal.Account) string {
+		return fmt.Sprintf("%20s  ", a.Amount.DisplayableQuantity(true))
+	}
+
+	if flattenTree {
+		flattened := jb.rootAccount.FlattenedTree(prepender)
+		fmt.Println(flattened)
+	} else {
+		tree := jb.rootAccount.Tree(prepender)
+		fmt.Println(tree)
+	}
+
+	// 20 - because that is how wide we format the amount to be
+	fmt.Println("--------------------")
+
 	// Print the root account's value
-	fmt.Println("--------------------") // 20 is how wide we format the amount to be
 	fmt.Printf("%20s\n", jb.rootAccount.Amount.DisplayableQuantity(false))
-}
-
-func printAccountsAndQuantities(a journal.Account, depth int) {
-	// Skip over root
-	// TODO: alert the user that 'root' (or something similar) is reserved for gledger
-	if a.Name == journal.RootID {
-		for _, c := range a.SortedChildNames() {
-			printAccountsAndQuantities(*a.Children[c], depth+1)
-		}
-		return
-	}
-
-	spaces := ""
-	var tabWidth int = 2
-	for i := 0; i < depth*tabWidth; i++ {
-		spaces = fmt.Sprintf(" %s", spaces)
-	}
-	nameAndQuantity := fmt.Sprintf("%20s%s%s", a.Amount.DisplayableQuantity(true), spaces, a.Name)
-
-	// If there is only one child, we don't need to indent, just append it now
-	if len(a.Children) == 1 {
-		// We know this loop will only happen once
-		for child := range a.Children {
-			nameAndQuantity = fmt.Sprintf("%s:%s", nameAndQuantity, child)
-		}
-		fmt.Println(nameAndQuantity)
-		return
-	}
-
-	// Print this account
-	fmt.Println(nameAndQuantity)
-
-	// Descend to children
-	for _, c := range a.SortedChildNames() {
-		printAccountsAndQuantities(*a.Children[c], depth+1)
-	}
 }
