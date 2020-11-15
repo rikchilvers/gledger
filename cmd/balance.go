@@ -7,12 +7,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	balanceCmd.Flags().BoolVarP(&flattenTree, "flat", "l", false, "show accounts as a flat list")
-	rootCmd.AddCommand(balanceCmd)
-}
-
 var flattenTree bool
+var elideZero bool
 
 var balanceCmd = &cobra.Command{
 	Use:          "balance",
@@ -27,6 +23,12 @@ var balanceCmd = &cobra.Command{
 		}
 		jb.report()
 	},
+}
+
+func init() {
+	balanceCmd.Flags().BoolVarP(&flattenTree, "flat", "l", false, "show accounts as a flat list")
+	balanceCmd.Flags().BoolVarP(&elideZero, "empty", "E", true, "show accounts with zero amount")
+	rootCmd.AddCommand(balanceCmd)
 }
 
 type journalBalance struct {
