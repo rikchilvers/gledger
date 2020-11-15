@@ -24,8 +24,8 @@ type Parser struct {
 }
 
 // NewParser creates a parser (including its journal)
-func NewParser(t TransactionHandler) *Parser {
-	return &Parser{
+func NewParser(t TransactionHandler) Parser {
+	return Parser{
 		previousItemType:   -1,
 		currentPosting:     nil,
 		currentTransaction: nil,
