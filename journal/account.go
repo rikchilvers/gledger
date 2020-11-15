@@ -12,7 +12,7 @@ const RootID string = "_root_"
 // Account is the
 type Account struct {
 	Name         string
-	Amount       *Amount
+	Amount       Amount
 	Parent       *Account
 	Children     map[string]*Account
 	Postings     []*Posting
@@ -57,7 +57,6 @@ func (a Account) Path() string {
 func NewAccount(name string) *Account {
 	return &Account{
 		Name:         name,
-		Amount:       NewAmount(0),
 		Parent:       nil,
 		Children:     make(map[string]*Account),
 		Postings:     make([]*Posting, 0, 2048),
