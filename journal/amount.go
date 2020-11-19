@@ -11,9 +11,9 @@ type Amount struct {
 }
 
 // NewAmount creates an Amount
-func NewAmount(q int64) *Amount {
+func NewAmount(c string, q int64) *Amount {
 	return &Amount{
-		Commodity: "",
+		Commodity: c,
 		Quantity:  q,
 	}
 }

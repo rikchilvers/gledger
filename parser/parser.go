@@ -125,17 +125,18 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 		}
 
 		if p.currentPosting.Amount == nil {
-			p.currentPosting.Amount = journal.NewAmount(0)
+			p.currentPosting.Amount = journal.NewAmount(string(content), 0)
+		} else {
+			p.currentPosting.Amount.Commodity = string(content)
 		}
 
-		p.currentPosting.Amount.Commodity = string(content)
 	case amountItem:
 		if p.previousItemType != commodityItem && p.previousItemType != payeeItem {
 			return fmt.Errorf("Expected amount but got %s", t)
 		}
 
 		if p.currentPosting.Amount == nil {
-			p.currentPosting.Amount = journal.NewAmount(0)
+			p.currentPosting.Amount = journal.NewAmount("", 0)
 		}
 
 		if err := p.parseAmount(content); err != nil {

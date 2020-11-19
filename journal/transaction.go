@@ -70,19 +70,23 @@ func (t *Transaction) AddPosting(p *Posting) error {
 func (t *Transaction) Close() error {
 	// Check the transaction balances
 	sum := int64(0)
+	c := ""
 	for _, p := range t.Postings {
-		if p.Amount == nil {
-			continue
-		} else {
-			sum += p.Amount.Quantity
+		// if there is a commodity, take a note of it
+		if len(p.Amount.Commodity) > 0 {
+			c = p.Amount.Commodity
 		}
+		sum += p.Amount.Quantity
 	}
 
 	if sum != 0 {
 		if t.postingWithElidedAmount == nil {
 			return errors.New("transaction does not balance")
 		}
-		t.postingWithElidedAmount.Amount = NewAmount(-sum)
+
+		// NB: setting the commodity like this will not work with multiple currencies
+		// see above comment too
+		t.postingWithElidedAmount.Amount = NewAmount(c, -sum)
 	}
 
 	return nil
