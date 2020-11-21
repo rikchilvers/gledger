@@ -32,5 +32,8 @@ jobs:
     - name: Build
       run: go build -v .
 
-    - name: Test
-      run: go test -v .
+    - name: Test Journal
+      run: go test -v ./journal
+
+    - name: Test Parser
+      run: go test -v ./parser
