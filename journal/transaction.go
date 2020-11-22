@@ -54,7 +54,7 @@ func (t Transaction) String() string {
 func (t *Transaction) AddPosting(p *Posting) error {
 	if p.Amount == nil {
 		if t.postingWithElidedAmount != nil {
-			return errors.New("Cannot have more than one posting with an elided amount")
+			return errors.New("cannot have more than one posting with an elided amount")
 		}
 		t.postingWithElidedAmount = p
 	}
@@ -72,6 +72,9 @@ func (t *Transaction) Close() error {
 	sum := int64(0)
 	c := ""
 	for _, p := range t.Postings {
+		if p.Amount == nil {
+			continue
+		}
 		// if there is a commodity, take a note of it
 		if len(p.Amount.Commodity) > 0 {
 			c = p.Amount.Commodity
