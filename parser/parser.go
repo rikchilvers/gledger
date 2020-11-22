@@ -2,6 +2,8 @@ package parser
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -35,11 +37,11 @@ func NewParser(t TransactionHandler) Parser {
 }
 
 // Parse lexes and parses the provided file line by line
-func (p *Parser) Parse(journalPath string) error {
-	p.journalFiles = append(p.journalFiles, journalPath)
+func (p *Parser) Parse(reader io.Reader, locationHint string) error {
+	p.journalFiles = append(p.journalFiles, locationHint)
 
 	// Begin lexing
-	lexer := newLexer(journalPath, p.parseItem)
+	lexer := newLexer(reader, locationHint, p.parseItem)
 	if err := lexer.lex(); err != nil {
 		// This is the exit point for the lexer's errors
 		return fmt.Errorf("Error at %w", err)
@@ -61,10 +63,19 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 		}
 	case includeItem:
 		path := string(content)
+
 		// Add the file to the slice
 		p.journalFiles = append(p.journalFiles, path)
 
-		lexer := newLexer(string(content), p.parseItem)
+		// Open the file
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		// Lex the file
+		lexer := newLexer(file, path, p.parseItem)
 		if err := lexer.lex(); err != nil {
 			// This is the exit point for the lexer's errors
 			return fmt.Errorf("Error at %w", err)
@@ -129,7 +140,6 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 		} else {
 			p.currentPosting.Amount.Commodity = string(content)
 		}
-
 	case amountItem:
 		if p.previousItemType != commodityItem && p.previousItemType != payeeItem {
 			return fmt.Errorf("Expected amount but got %s", t)

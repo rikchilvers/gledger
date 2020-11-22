@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"os"
 	"strings"
 
 	"github.com/rikchilvers/gledger/journal"
@@ -14,8 +15,15 @@ func parse(handler parser.TransactionHandler) error {
 		return errors.New("No root journal path provided")
 	}
 
+	// Open the file
+	file, err := os.Open(rootJournalPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
 	p := parser.NewParser(handler)
-	if err := p.Parse(rootJournalPath); err != nil {
+	if err := p.Parse(file, rootJournalPath); err != nil {
 		return err
 	}
 	return nil

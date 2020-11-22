@@ -6,8 +6,8 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"log"
-	"os"
 	"path/filepath"
 	"unicode"
 	"unicode/utf8"
@@ -35,38 +35,31 @@ const eof = -1
 const runeBufferCapacity = 256
 
 type lexer struct {
-	journalPath string
-	reader      *bufio.Reader
-	input       []byte
-	currentLine int
-	pos         int // input position
-	start       int // item start position
-	width       int // width of last element
-	parser      itemParser
+	locationHint string
+	reader       *bufio.Reader
+	input        []byte
+	currentLine  int
+	pos          int // input position
+	start        int // item start position
+	width        int // width of last element
+	parser       itemParser
 }
 
-func newLexer(journalPath string, parser itemParser) lexer {
+func newLexer(reader io.Reader, locationHint string, parser itemParser) lexer {
 	return lexer{
-		journalPath: journalPath,
-		reader:      nil,
-		input:       nil,
-		currentLine: 0,
-		pos:         0,
-		start:       0,
-		width:       0,
-		parser:      parser,
+		locationHint: locationHint,
+		reader:       bufio.NewReader(reader),
+		input:        nil,
+		currentLine:  0,
+		pos:          0,
+		start:        0,
+		width:        0,
+		parser:       parser,
 	}
 }
 
 // Lexes the file line by line
 func (l *lexer) lex() error {
-	file, err := os.Open(l.journalPath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	l.reader = bufio.NewReader(file)
-
 	l.currentLine = 1
 	for {
 		line, isPrefix, err := l.reader.ReadLine()
@@ -93,7 +86,7 @@ func (l *lexer) lex() error {
 		l.input = line
 		if err = l.lexLine(); err != nil {
 			// Add line data and pass up the error
-			return fmt.Errorf("%s:%d\n%w", l.journalPath, l.currentLine, err)
+			return fmt.Errorf("%s:%d\n%w", l.locationHint, l.currentLine, err)
 		}
 		l.currentLine++
 	}
@@ -161,7 +154,7 @@ func (l *lexer) lexIncludeDirective() error {
 
 	// We need to add any directory information here
 	// because the parser does not know about where we're including from
-	dir, _ := filepath.Split(l.journalPath)
+	dir, _ := filepath.Split(l.locationHint)
 	fileToInclude = append([]rune(dir), fileToInclude...)
 
 	return l.parser(includeItem, fileToInclude)
