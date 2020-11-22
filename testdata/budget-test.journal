@@ -1,0 +1,14 @@
+2020-10-01 * Salary
+    Assets:Current    £1000
+    Income:Job
+
+~ budget
+    Life:Clothing   £50
+
+2020-10-02 * Clothes store  ; new shoes
+    Assets:Current
+    Expenses:Clothing    £40.00
+
+2020-10-02 * Grocery store ; unbudgeted spending
+    Assets:Current
+    Expenses:Groceries    £20.00
