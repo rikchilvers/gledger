@@ -44,7 +44,7 @@ func (p *Parser) Parse(reader io.Reader, locationHint string) error {
 	lexer := newLexer(reader, locationHint, p.parseItem)
 	if err := lexer.lex(); err != nil {
 		// This is the exit point for the lexer's errors
-		return fmt.Errorf("Error at %w", err)
+		return fmt.Errorf("error at %w", err)
 	}
 
 	return nil
@@ -78,7 +78,7 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 		lexer := newLexer(file, path, p.parseItem)
 		if err := lexer.lex(); err != nil {
 			// This is the exit point for the lexer's errors
-			return fmt.Errorf("Error at %w", err)
+			return fmt.Errorf("error at %w", err)
 		}
 
 		// Drop the file from the slice
@@ -93,11 +93,11 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 
 		p.currentTransaction.Date, err = parseDate(content)
 		if err != nil {
-			return fmt.Errorf("Error parsing date\n%w", err)
+			return fmt.Errorf("error parsing date\n%w", err)
 		}
 	case stateItem:
 		if p.previousItemType != dateItem {
-			return fmt.Errorf("Expected state but got %s", t)
+			return fmt.Errorf("expected state but got %s", t)
 		}
 
 		switch content[0] {
@@ -110,14 +110,14 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 		}
 	case payeeItem:
 		if p.previousItemType != dateItem && p.previousItemType != stateItem {
-			return fmt.Errorf("Expected payee but got %s", t)
+			return fmt.Errorf("expected payee but got %s", t)
 		}
 
 		// TODO: try to remove necessity of TrimSpace everywhere
 		p.currentTransaction.Payee = strings.TrimSpace(string(content))
 	case accountItem:
 		if p.previousItemType != payeeItem && p.previousItemType != amountItem && p.previousItemType != accountItem {
-			return fmt.Errorf("Expected account but got %s", t)
+			return fmt.Errorf("expected account but got %s", t)
 		}
 
 		// Accounts start a posting, so check if we need to start a new one
@@ -132,7 +132,7 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 		p.currentPosting.AccountPath = string(content)
 	case commodityItem:
 		if p.previousItemType != accountItem {
-			return fmt.Errorf("Expected currency but got %s", t)
+			return fmt.Errorf("expected currency but got %s", t)
 		}
 
 		if p.currentPosting.Amount == nil {
@@ -142,7 +142,7 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 		}
 	case amountItem:
 		if p.previousItemType != commodityItem && p.previousItemType != payeeItem {
-			return fmt.Errorf("Expected amount but got %s", t)
+			return fmt.Errorf("expected amount but got %s", t)
 		}
 
 		if p.currentPosting.Amount == nil {
@@ -153,7 +153,7 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 			return fmt.Errorf("error parsing amount: %w", err)
 		}
 	default:
-		return fmt.Errorf("Unhandled itemType: %s", t)
+		return fmt.Errorf("unhandled itemType: %s", t)
 	}
 
 	p.previousItemType = t
@@ -177,7 +177,7 @@ func parseDate(content []rune) (time.Time, error) {
 	case '/':
 		date, err = time.Parse(SlashDateFormat, s)
 	default:
-		return time.Time{}, fmt.Errorf("Date is malformed: %s", s)
+		return time.Time{}, fmt.Errorf("date is malformed: %s", s)
 	}
 
 	if err != nil {
@@ -218,13 +218,19 @@ func (p *Parser) parseAmount(content []rune) error {
 		// TODO: consider https://stackoverflow.com/a/29255836
 		whole, err = strconv.ParseInt(string(content), 10, 64)
 		decimal = 0
+
+		if err != nil {
+			return err
+		}
 	} else {
 		whole, err = strconv.ParseInt(string(content[:decimalPosition]), 10, 64)
+		if err != nil {
+			return err
+		}
 		decimal, err = strconv.ParseInt(string(content[decimalPosition+1:]), 10, 64)
-	}
-
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	p.currentPosting.Amount.Quantity = multiplier * (whole*100 + decimal)

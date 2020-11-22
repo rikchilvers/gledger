@@ -26,7 +26,7 @@ func (a Account) String() string {
 // Includes children
 func (a Account) asString(level int) string {
 	// Print the name of this account at the specified level
-	s := fmt.Sprintf("%s", a.Name)
+	s := a.Name
 	for i := 0; i < level*shared.TabWidth; i++ {
 		s = fmt.Sprintf(" %s", s)
 	}

@@ -134,7 +134,7 @@ func (l *lexer) lexLine() error {
 		return l.lexPosting()
 	}
 
-	return errors.New("Unhandled line type for lexing")
+	return errors.New("unexpected line type during lexing")
 }
 
 func (l *lexer) lexIncludeDirective() error {
@@ -229,7 +229,7 @@ func (l *lexer) lexPosting() error {
 		// Bail if there are not enough spaces
 		if l.consumeSpace() < 2 {
 			if len(l.input)-l.pos > 1 {
-				return errors.New("Not enough spaces following account")
+				return errors.New("not enough spaces following account")
 			}
 			return nil
 		}

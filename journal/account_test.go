@@ -165,7 +165,7 @@ func TestAccountPrinting(t *testing.T) {
 	components := []string{"assets", "my savings account "}
 	account := newAccountWithChildren(components, nil)
 
-	result := fmt.Sprintf("%s", account.Parent)
+	result := account.Parent.String()
 	expected := "assets\n  my savings account "
 
 	if result != expected {
