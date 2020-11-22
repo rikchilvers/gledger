@@ -36,24 +36,30 @@ func (p *mockParser) parseItem(t itemType, content []rune) error {
 	return nil
 }
 
+// TestLex checks lexing a reader works
+// (this is how the lexer will be used in production)
 func TestLex(t *testing.T) {
-	parser := &mockParser{}
-	reader := strings.NewReader(string(transactionHeader))
-	lexer := lexer{}
-	lexer.currentLine = 1
-	lexer.parser = parser
+	parser := mockParser{}
+	lexer := newLexer(strings.NewReader(string(transactionHeader)), "th", parser.parseItem)
+	err := lexer.lex()
 
-	lexer.lex(reader)
+	if err != nil {
+		t.Fatalf("lex returned unexpected err")
+	}
 }
 
 func TestLexTransactionHeader(t *testing.T) {
-	parser := &mockParser{}
+	parser := mockParser{}
 	lexer := lexer{}
+	lexer.parser = parser.parseItem
 	lexer.currentLine = 1
 	lexer.input = transactionHeader
-	lexer.parser = parser
 
-	lexer.lexTransactionHeader()
+	err := lexer.lexTransactionHeader()
+
+	if err != nil {
+		t.Fatalf("lex returned unexpected err")
+	}
 
 	if !parser.lexedDate {
 		t.Fatalf("lexer did not lex date")
