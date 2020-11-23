@@ -17,12 +17,13 @@ func _() {
 	_ = x[commodityItem-6]
 	_ = x[amountItem-7]
 	_ = x[commentItem-8]
-	_ = x[eofItem-9]
+	_ = x[periodItem-9]
+	_ = x[eofItem-10]
 }
 
-const _itemType_name = "emptyLineItemincludeItemdateItemstateItempayeeItemaccountItemcommodityItemamountItemcommentItemeofItem"
+const _itemType_name = "emptyLineItemincludeItemdateItemstateItempayeeItemaccountItemcommodityItemamountItemcommentItemperiodItemeofItem"
 
-var _itemType_index = [...]uint8{0, 13, 24, 32, 41, 50, 61, 74, 84, 95, 102}
+var _itemType_index = [...]uint8{0, 13, 24, 32, 41, 50, 61, 74, 84, 95, 105, 112}
 
 func (i itemType) String() string {
 	if i < 0 || i >= itemType(len(_itemType_index)-1) {

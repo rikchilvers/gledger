@@ -152,6 +152,8 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 		if err := p.parseAmount(content); err != nil {
 			return fmt.Errorf("error parsing amount: %w", err)
 		}
+	case periodItem:
+		fmt.Println("got a period:", string(content))
 	default:
 		return fmt.Errorf("unhandled itemType: %s", t)
 	}

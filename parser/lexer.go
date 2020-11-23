@@ -28,6 +28,7 @@ const (
 	commodityItem
 	amountItem
 	commentItem
+	periodItem
 	eofItem
 )
 
@@ -121,6 +122,11 @@ func (l *lexer) lexLine() error {
 		return l.parser(eofItem, nil)
 	}
 
+	// Handle periodic transactions
+	if firstRune == '~' {
+		return l.lexPeriodTransactionHeader()
+	}
+
 	// Detect transaction headers
 	// TODO: handle passing different transaction header indicators
 	if unicode.IsNumber(firstRune) {
@@ -160,18 +166,14 @@ func (l *lexer) lexIncludeDirective() error {
 	return l.parser(includeItem, fileToInclude)
 }
 
-// Equal tells whether a and b contain the same elements.
-// A nil argument is equivalent to an empty slice.
-func equal(a, b []rune) bool {
-	if len(a) != len(b) {
-		return false
+func (l *lexer) lexPeriodTransactionHeader() error {
+	spaces := l.consumeSpace()
+	if spaces == 0 {
+		return errors.New("not enough spaces following ~")
 	}
-	for i, v := range a {
-		if v != b[i] {
-			return false
-		}
-	}
-	return true
+
+	period := l.takeToNextLineOrComment()
+	return l.parser(periodItem, period)
 }
 
 func (l *lexer) lexTransactionHeader() error {
@@ -427,4 +429,18 @@ func (l *lexer) takeUntilDecimal() []rune {
 	}
 
 	return runes
+}
+
+// Equal tells whether a and b contain the same elements.
+// A nil argument is equivalent to an empty slice.
+func equal(a, b []rune) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
 }
