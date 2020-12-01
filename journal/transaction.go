@@ -27,8 +27,8 @@ type Transaction struct {
 }
 
 // NewTransaction creates a transaction
-func NewTransaction() *Transaction {
-	return &Transaction{
+func NewTransaction() Transaction {
+	return Transaction{
 		Date:                    time.Time{},
 		State:                   NoState,
 		Payee:                   "",
@@ -38,7 +38,6 @@ func NewTransaction() *Transaction {
 }
 
 func (t Transaction) String() string {
-	// return fmt.Sprintf("Transaction:\n\t%s\n\t%s\n\t%s\n\t%d postings (%v)", t.date, t.state.String(), t.payee, len(t.postings), t.postingWithElidedAmount != nil)
 	ts := fmt.Sprintf(`Transaction:
 	%s
 	%s

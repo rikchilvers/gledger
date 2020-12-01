@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/rikchilvers/gledger/journal"
@@ -14,24 +13,21 @@ import (
 // TransactionHandler is the func commands can use to analyse the journal.
 // Takes a Transaction and a path to the file where this Transaction was found.
 type TransactionHandler = func(t *journal.Transaction, path string) error
+type PeriodicTransactionHandler = func(t *journal.Transaction, path string) error
 type itemParser = func(t itemType, content []rune) error
 
 // Parser is how gledger reads journal files
 type Parser struct {
-	previousItemType   itemType
-	currentPosting     *journal.Posting
-	currentTransaction *journal.Transaction
 	transactionHandler TransactionHandler
+	transactionBuilder transactionBuilder
 	journalFiles       []string
 }
 
 // NewParser creates a parser (including its journal)
 func NewParser(t TransactionHandler) Parser {
 	return Parser{
-		previousItemType:   -1,
-		currentPosting:     nil,
-		currentTransaction: nil,
 		transactionHandler: t,
+		transactionBuilder: newTransactionBuilder(),
 		journalFiles:       make([]string, 0, 2),
 	}
 }
@@ -47,18 +43,19 @@ func (p *Parser) Parse(reader io.Reader, locationHint string) error {
 		return fmt.Errorf("error at %w", err)
 	}
 
+	// bloop
 	return nil
 }
 
 func (p *Parser) parseItem(t itemType, content []rune) error {
 	switch t {
 	case emptyLineItem:
-		if err := p.endTransaction(); err != nil {
+		// an empty line signals that the transaction should close
+		if err := p.transactionBuilder.endTransaction(*p); err != nil {
 			return err
 		}
-	case eofItem:
-		// Make sure we close the final transaction
-		if err := p.endTransaction(); err != nil {
+	case eofItem: // Make sure we close the final transaction
+		if err := p.transactionBuilder.endTransaction(*p); err != nil {
 			return err
 		}
 	case includeItem:
@@ -85,80 +82,24 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 		p.journalFiles = p.journalFiles[:1]
 	case dateItem:
 		// This will start a transaction so check if we need to close a previous one
-		err := p.endTransaction()
-		if err != nil {
+		// in case there is no empty line between transactions
+		err := p.transactionBuilder.endTransaction(*p); if err != nil {
 			return err
 		}
-		p.currentTransaction = journal.NewTransaction()
 
-		p.currentTransaction.Date, err = parseDate(content)
+		p.transactionBuilder.beginTransaction(normalTransaction)
+		err = p.transactionBuilder.build(t, content)
+
 		if err != nil {
 			return fmt.Errorf("error parsing date\n%w", err)
 		}
-	case stateItem:
-		if p.previousItemType != dateItem {
-			return fmt.Errorf("expected state but got %s", t)
-		}
-
-		switch content[0] {
-		case '!':
-			p.currentTransaction.State = journal.UnclearedState
-		case '*':
-			p.currentTransaction.State = journal.ClearedState
-		default:
-			p.currentTransaction.State = journal.NoState
-		}
-	case payeeItem:
-		if p.previousItemType != dateItem && p.previousItemType != stateItem {
-			return fmt.Errorf("expected payee but got %s", t)
-		}
-
-		// TODO: try to remove necessity of TrimSpace everywhere
-		p.currentTransaction.Payee = strings.TrimSpace(string(content))
-	case accountItem:
-		if p.previousItemType != payeeItem && p.previousItemType != amountItem && p.previousItemType != accountItem {
-			return fmt.Errorf("expected account but got %s", t)
-		}
-
-		// Accounts start a posting, so check if we need to start a new one
-		// (When a transaction is started, the current posting is set to nil)
-		if p.currentPosting != nil {
-			p.currentTransaction.AddPosting(p.currentPosting)
-		}
-		p.currentPosting = journal.NewPosting()
-
-		p.currentPosting.Transaction = p.currentTransaction
-
-		p.currentPosting.AccountPath = string(content)
-	case commodityItem:
-		if p.previousItemType != accountItem {
-			return fmt.Errorf("expected currency but got %s", t)
-		}
-
-		if p.currentPosting.Amount == nil {
-			p.currentPosting.Amount = journal.NewAmount(string(content), 0)
-		} else {
-			p.currentPosting.Amount.Commodity = string(content)
-		}
-	case amountItem:
-		if p.previousItemType != commodityItem && p.previousItemType != payeeItem {
-			return fmt.Errorf("expected amount but got %s", t)
-		}
-
-		if p.currentPosting.Amount == nil {
-			p.currentPosting.Amount = journal.NewAmount("", 0)
-		}
-
-		if err := p.parseAmount(content); err != nil {
-			return fmt.Errorf("error parsing amount: %w", err)
-		}
 	case periodItem:
-		fmt.Println("got a period:", string(content))
+		// TODO should start a period transaction
+		break
 	default:
-		return fmt.Errorf("unhandled itemType: %s", t)
+		return p.transactionBuilder.build(t, content)
 	}
 
-	p.previousItemType = t
 	return nil
 }
 
@@ -189,7 +130,7 @@ func parseDate(content []rune) (time.Time, error) {
 	return date, nil
 }
 
-func (p *Parser) parseAmount(content []rune) error {
+func parseAmount(content []rune) (int64, error) {
 	// Handle signs
 	firstRune := content[0]
 	var multiplier int64
@@ -222,51 +163,20 @@ func (p *Parser) parseAmount(content []rune) error {
 		decimal = 0
 
 		if err != nil {
-			return err
+			return 0, err
 		}
 	} else {
 		whole, err = strconv.ParseInt(string(content[:decimalPosition]), 10, 64)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		decimal, err = strconv.ParseInt(string(content[decimalPosition+1:]), 10, 64)
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
 
-	p.currentPosting.Amount.Quantity = multiplier * (whole*100 + decimal)
+	quantity := multiplier * (whole*100 + decimal)
 
-	return nil
-}
-
-func (p *Parser) endTransaction() error {
-	if p.currentTransaction == nil {
-		return nil
-	}
-
-	var err error
-
-	// Make sure we add the last open posting
-	if p.currentPosting != nil {
-		err = p.currentTransaction.AddPosting(p.currentPosting)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = p.currentTransaction.Close()
-	if err != nil {
-		return err
-	}
-
-	if p.transactionHandler != nil {
-		if err = p.transactionHandler(p.currentTransaction, p.journalFiles[len(p.journalFiles)-1]); err != nil {
-			return err
-		}
-	}
-
-	p.currentTransaction = nil
-	p.currentPosting = nil
-	return nil
+	return quantity, nil
 }
