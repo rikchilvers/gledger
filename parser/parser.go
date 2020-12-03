@@ -20,17 +20,19 @@ type (
 
 // Parser is how gledger reads journal files
 type Parser struct {
-	transactionHandler TransactionHandler
-	transactionBuilder transactionBuilder
-	journalFiles       []string
+	transactionHandler         TransactionHandler
+	periodicTransactionHandler PeriodicTransactionHandler
+	transactionBuilder         transactionBuilder
+	journalFiles               []string
 }
 
 // NewParser creates a parser (including its journal)
-func NewParser(t TransactionHandler) Parser {
+func NewParser(th TransactionHandler, ph PeriodicTransactionHandler) Parser {
 	return Parser{
-		transactionHandler: t,
-		transactionBuilder: newTransactionBuilder(),
-		journalFiles:       make([]string, 0, 2),
+		transactionHandler:         th,
+		periodicTransactionHandler: ph,
+		transactionBuilder:         newTransactionBuilder(),
+		journalFiles:               make([]string, 0, 2),
 	}
 }
 

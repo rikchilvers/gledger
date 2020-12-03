@@ -1,3 +1,4 @@
+// Package cmd handles the cli
 package cmd
 
 import (
@@ -12,7 +13,7 @@ import (
 func parse(handler parser.TransactionHandler) error {
 	if rootJournalPath == "" {
 		// TODO: use viper to read env variable
-		return errors.New("No root journal path provided")
+		return errors.New("no root journal path provided")
 	}
 
 	// Open the file
@@ -22,7 +23,7 @@ func parse(handler parser.TransactionHandler) error {
 	}
 	defer file.Close()
 
-	p := parser.NewParser(handler)
+	p := parser.NewParser(handler, nil)
 	if err := p.Parse(file, rootJournalPath); err != nil {
 		return err
 	}
