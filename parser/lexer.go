@@ -32,8 +32,10 @@ const (
 	eofItem
 )
 
-const eof = -1
-const runeBufferCapacity = 256
+const (
+	eof                = -1
+	runeBufferCapacity = 256
+)
 
 type lexer struct {
 	locationHint string
