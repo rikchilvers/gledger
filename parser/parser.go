@@ -200,8 +200,6 @@ func parsePeriod(content []rune) (journal.Period, error) {
 		return p, nil
 	}
 
-	fmt.Println("got date:", date)
-
 	p.StartDate = date
 	p.EndDate = date
 	p.Interval = journal.PNone
