@@ -12,9 +12,11 @@ import (
 
 // TransactionHandler is the func commands can use to analyse the journal.
 // Takes a Transaction and a path to the file where this Transaction was found.
-type TransactionHandler = func(t *journal.Transaction, path string) error
-type PeriodicTransactionHandler = func(t *journal.Transaction, path string) error
-type itemParser = func(t itemType, content []rune) error
+type (
+	TransactionHandler         = func(t *journal.Transaction, path string) error
+	PeriodicTransactionHandler = func(t *journal.PeriodicTransaction, path string) error
+	itemParser                 = func(t itemType, content []rune) error
+)
 
 // Parser is how gledger reads journal files
 type Parser struct {
@@ -43,7 +45,6 @@ func (p *Parser) Parse(reader io.Reader, locationHint string) error {
 		return fmt.Errorf("error at %w", err)
 	}
 
-	// bloop
 	return nil
 }
 
@@ -83,14 +84,14 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 	case dateItem:
 		// This will start a transaction so check if we need to close a previous one
 		// in case there is no empty line between transactions
-		err := p.transactionBuilder.endTransaction(*p); if err != nil {
+		if err := p.transactionBuilder.endTransaction(*p); err != nil {
 			return err
 		}
 
 		p.transactionBuilder.beginTransaction(normalTransaction)
-		err = p.transactionBuilder.build(t, content)
 
-		if err != nil {
+		// tell the builder about this date
+		if err := p.transactionBuilder.build(t, content); err != nil {
 			return fmt.Errorf("error parsing date\n%w", err)
 		}
 	case periodItem:
