@@ -1,3 +1,4 @@
+// Package parser handles reading from journal files
 package parser
 
 import (
@@ -13,7 +14,6 @@ type transactionType int
 
 const (
 	normalTransaction transactionType = iota
-	budgetTransaction
 	periodicTransaction
 )
 
@@ -34,27 +34,28 @@ func newTransactionBuilder() transactionBuilder {
 }
 
 func (tb *transactionBuilder) beginTransaction(t transactionType) {
-	switch tb.transactionType {
+	switch t {
 	case normalTransaction:
+		fmt.Println("starting normal transaction")
 		tb.transaction = journal.NewTransaction()
+		tb.transactionType = normalTransaction
 	case periodicTransaction:
-		break
-	case budgetTransaction:
-		break
+		fmt.Println("starting periodic transaction")
+		tb.transaction = journal.NewPeriodicTransaction()
+		tb.transactionType = periodicTransaction
 	}
 }
 
-// build returns the finished transaction or an error
 func (tb *transactionBuilder) build(t itemType, content []rune) error {
 	switch tb.transactionType {
 	case normalTransaction:
-		err := tb.buildNormalTransaction(t, content); if err != nil {
+		if err := tb.buildNormalTransaction(t, content); err != nil {
 			return err
 		}
 	case periodicTransaction:
-		break
-	case budgetTransaction:
-		break
+		if err := tb.buildPeriodicTransaction(t, content); err != nil {
+			return err
+		}
 	}
 
 	tb.previousItemType = t
@@ -159,6 +160,27 @@ func (tb *transactionBuilder) buildNormalTransaction(t itemType, content []rune)
 	return nil
 }
 
+func (tb *transactionBuilder) buildPeriodicTransaction(t itemType, content []rune) error {
+	transaction, ok := tb.transaction.(journal.PeriodicTransaction)
+	if !ok {
+		return errors.New("incorrect transaction type")
+	}
+
+	switch t {
+	case periodItem:
+		period, err := parsePeriod(content)
+		if err != nil {
+			return err
+		}
+		transaction.Period = period
+		fmt.Println("ptransaction has a period")
+	default:
+		break
+	}
+
+	return nil
+}
+
 func (tb *transactionBuilder) endTransaction(p Parser) error {
 	// If we don't have a transaction, return here
 	if tb.transaction == nil {
@@ -169,16 +191,15 @@ func (tb *transactionBuilder) endTransaction(p Parser) error {
 	case normalTransaction:
 		return tb.endNormalTransaction(p)
 	case periodicTransaction:
-		break
-	case budgetTransaction:
-		break
+		fmt.Println("unimplemented end of periodic transaction")
 	}
-	
+
 	return nil
 }
 
 func (tb *transactionBuilder) endNormalTransaction(p Parser) error {
-	transaction, ok := tb.transaction.(journal.Transaction); if !ok {
+	transaction, ok := tb.transaction.(journal.Transaction)
+	if !ok {
 		return errors.New("incorrect transaction type")
 	}
 
@@ -206,4 +227,3 @@ func (tb *transactionBuilder) endNormalTransaction(p Parser) error {
 	tb.currentPosting = nil
 	return nil
 }
-

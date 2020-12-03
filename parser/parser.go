@@ -95,8 +95,14 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 			return fmt.Errorf("error parsing date\n%w", err)
 		}
 	case periodItem:
-		// TODO should start a period transaction
-		break
+		// This will start a transaction so check if we need to close a previous one
+		// in case there is no empty line between transactions
+		if err := p.transactionBuilder.endTransaction(*p); err != nil {
+			return err
+		}
+
+		p.transactionBuilder.beginTransaction(periodicTransaction)
+		p.transactionBuilder.build(t, content)
 	default:
 		return p.transactionBuilder.build(t, content)
 	}
@@ -180,4 +186,25 @@ func parseAmount(content []rune) (int64, error) {
 	quantity := multiplier * (whole*100 + decimal)
 
 	return quantity, nil
+}
+
+func parsePeriod(content []rune) (journal.Period, error) {
+	const budgetDateFormat string = "2006-01"
+
+	p := journal.Period{}
+	s := string(content)
+
+	// Try to cast to a budget date
+	date, err := time.Parse(budgetDateFormat, s)
+	if err != nil {
+		return p, nil
+	}
+
+	fmt.Println("got date:", date)
+
+	p.StartDate = date
+	p.EndDate = date
+	p.Interval = journal.PNone
+
+	return p, nil
 }
