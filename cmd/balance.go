@@ -7,8 +7,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var flattenTree bool
-var elideZero bool
+var (
+	flattenTree bool
+	elideZero   bool
+)
 
 var balanceCmd = &cobra.Command{
 	Use:          "balance",
@@ -17,7 +19,7 @@ var balanceCmd = &cobra.Command{
 	SilenceUsage: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		jb := newJournalBalance()
-		if err := parse(jb.transactionHandler); err != nil {
+		if err := parse(jb.transactionHandler, nil); err != nil {
 			fmt.Println(err)
 			return
 		}

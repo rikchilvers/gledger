@@ -10,7 +10,7 @@ import (
 	"github.com/rikchilvers/gledger/parser"
 )
 
-func parse(handler parser.TransactionHandler) error {
+func parse(th parser.TransactionHandler, ph parser.PeriodicTransactionHandler) error {
 	if rootJournalPath == "" {
 		// TODO: use viper to read env variable
 		return errors.New("no root journal path provided")
@@ -23,7 +23,7 @@ func parse(handler parser.TransactionHandler) error {
 	}
 	defer file.Close()
 
-	p := parser.NewParser(handler, nil)
+	p := parser.NewParser(th, ph)
 	if err := p.Parse(file, rootJournalPath); err != nil {
 		return err
 	}
