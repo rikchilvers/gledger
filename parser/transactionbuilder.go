@@ -2,7 +2,6 @@
 package parser
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -18,10 +17,11 @@ const (
 )
 
 type transactionBuilder struct {
-	transaction      interface{}      // the transaction we're building
-	transactionType  transactionType  // the type of the transaction being built
-	currentPosting   *journal.Posting // the current posting for the transaction
-	previousItemType itemType         // the previous item we were given
+	transactionType     transactionType             // the type of the transaction being built
+	transaction         journal.Transaction         // the transaction we're building
+	periodicTransaction journal.PeriodicTransaction // the periodic transaction we're building
+	currentPosting      *journal.Posting            // the current posting for the transaction
+	previousItemType    itemType                    // the previous item we were given
 }
 
 func newTransactionBuilder() transactionBuilder {
@@ -29,31 +29,27 @@ func newTransactionBuilder() transactionBuilder {
 		transactionType:  normalTransaction,
 		previousItemType: -1,
 		currentPosting:   nil,
-		transaction:      nil,
 	}
 }
 
 func (tb *transactionBuilder) beginTransaction(t transactionType) {
+	tb.transactionType = t
 	switch t {
 	case normalTransaction:
-		fmt.Println("starting normal transaction")
 		tb.transaction = journal.NewTransaction()
-		tb.transactionType = normalTransaction
 	case periodicTransaction:
-		fmt.Println("starting periodic transaction")
-		tb.transaction = journal.NewPeriodicTransaction()
-		tb.transactionType = periodicTransaction
+		tb.periodicTransaction = journal.NewPeriodicTransaction()
 	}
 }
 
 func (tb *transactionBuilder) build(t itemType, content []rune) error {
 	switch tb.transactionType {
 	case normalTransaction:
-		if err := tb.buildNormalTransaction(t, content); err != nil {
+		if err := tb.buildNormalTransaction(&tb.transaction, t, content); err != nil {
 			return err
 		}
 	case periodicTransaction:
-		if err := tb.buildPeriodicTransaction(t, content); err != nil {
+		if err := tb.buildPeriodicTransaction(&tb.periodicTransaction, t, content); err != nil {
 			return err
 		}
 	}
@@ -62,46 +58,40 @@ func (tb *transactionBuilder) build(t itemType, content []rune) error {
 	return nil
 }
 
-func (tb *transactionBuilder) buildNormalTransaction(t itemType, content []rune) error {
-	// Start by casting the transaction
-	transaction, ok := tb.transaction.(journal.Transaction)
-	if !ok {
-		return errors.New("incorrect transaction type")
-	}
-
-	switch t {
+func (tb *transactionBuilder) buildNormalTransaction(t *journal.Transaction, item itemType, content []rune) error {
+	switch item {
 	case dateItem:
 		date, err := parseDate(content)
 		if err != nil {
 			return err
 		}
-		transaction.Date = date
+		t.Date = date
 	case stateItem:
 		if tb.previousItemType != dateItem {
-			return fmt.Errorf("expected state but got %s", t)
+			return fmt.Errorf("expected state but got %s", item)
 		}
 
 		switch content[0] {
 		case '!':
-			transaction.State = journal.UnclearedState
+			t.State = journal.UnclearedState
 		case '*':
-			transaction.State = journal.ClearedState
+			t.State = journal.ClearedState
 		default:
-			transaction.State = journal.NoState
+			t.State = journal.NoState
 		}
 	case payeeItem:
 		if tb.previousItemType != dateItem && tb.previousItemType != stateItem {
-			return fmt.Errorf("expected payee but got %s", t)
+			return fmt.Errorf("expected payee but got %s", item)
 		}
 
 		// TODO: try to remove necessity of TrimSpace everywhere
-		transaction.Payee = strings.TrimSpace(string(content))
+		t.Payee = strings.TrimSpace(string(content))
 	case accountItem:
 		if tb.previousItemType != payeeItem &&
 			tb.previousItemType != amountItem &&
 			tb.previousItemType != accountItem &&
 			tb.previousItemType != periodItem {
-			return fmt.Errorf("expected account but got %s", t)
+			return fmt.Errorf("expected account but got %s", item)
 		}
 
 		// Skip period transactions
@@ -112,16 +102,16 @@ func (tb *transactionBuilder) buildNormalTransaction(t itemType, content []rune)
 		// Accounts start a posting, so check if we need to start a new one
 		// (When a transaction is started, the current posting is set to nil)
 		if tb.currentPosting != nil {
-			transaction.AddPosting(tb.currentPosting)
+			t.AddPosting(tb.currentPosting)
 		}
 		tb.currentPosting = journal.NewPosting()
 
-		tb.currentPosting.Transaction = &transaction
+		tb.currentPosting.Transaction = t
 
 		tb.currentPosting.AccountPath = string(content)
 	case commodityItem:
 		if tb.previousItemType != accountItem {
-			return fmt.Errorf("expected currency but got %s", t)
+			return fmt.Errorf("expected currency but got %s", item)
 		}
 
 		// Skip period transactions
@@ -136,7 +126,7 @@ func (tb *transactionBuilder) buildNormalTransaction(t itemType, content []rune)
 		}
 	case amountItem:
 		if tb.previousItemType != commodityItem && tb.previousItemType != payeeItem {
-			return fmt.Errorf("expected amount but got %s", t)
+			return fmt.Errorf("expected amount but got %s", item)
 		}
 
 		// Skip period transactions
@@ -155,75 +145,63 @@ func (tb *transactionBuilder) buildNormalTransaction(t itemType, content []rune)
 		tb.currentPosting.Amount.Quantity = amount
 	}
 
-	// We've modified the transaction so must update it
-	tb.transaction = transaction
 	return nil
 }
 
-func (tb *transactionBuilder) buildPeriodicTransaction(t itemType, content []rune) error {
-	transaction, ok := tb.transaction.(journal.PeriodicTransaction)
-	if !ok {
-		return errors.New("incorrect transaction type")
-	}
-
-	switch t {
+func (tb *transactionBuilder) buildPeriodicTransaction(t *journal.PeriodicTransaction, i itemType, content []rune) error {
+	switch i {
 	case periodItem:
 		period, err := parsePeriod(content)
 		if err != nil {
 			return err
 		}
-		transaction.Period = period
-		fmt.Println("ptransaction has a period")
+		t.Period = period
 	default:
-		break
+		// In all other cases, we just want to build the normal transaction
+		return tb.buildNormalTransaction(&t.Transaction, i, content)
 	}
 
 	return nil
 }
 
 func (tb *transactionBuilder) endTransaction(p Parser) error {
-	// If we don't have a transaction, return here
-	if tb.transaction == nil {
+	// If the transaction hasn't been modified, end here
+	if tb.transaction.Date.IsZero() {
 		return nil
 	}
 
 	switch tb.transactionType {
 	case normalTransaction:
-		return tb.endNormalTransaction(p)
+		return tb.endNormalTransaction(&tb.transaction, p)
 	case periodicTransaction:
-		fmt.Println("unimplemented end of periodic transaction")
+		return tb.endNormalTransaction(&tb.periodicTransaction.Transaction, p)
 	}
 
 	return nil
 }
 
-func (tb *transactionBuilder) endNormalTransaction(p Parser) error {
-	transaction, ok := tb.transaction.(journal.Transaction)
-	if !ok {
-		return errors.New("incorrect transaction type")
-	}
-
+func (tb *transactionBuilder) endNormalTransaction(t *journal.Transaction, p Parser) error {
 	var err error
 
 	// Make sure we add the last open posting
 	if tb.currentPosting != nil {
-		err = transaction.AddPosting(tb.currentPosting)
+		err = t.AddPosting(tb.currentPosting)
 		if err != nil {
 			return err
 		}
 	}
 
-	if err = transaction.Close(); err != nil {
+	if err = t.Close(); err != nil {
 		return err
 	}
 
 	if p.transactionHandler != nil {
-		if err = p.transactionHandler(&transaction, p.journalFiles[len(p.journalFiles)-1]); err != nil {
+		if err = p.transactionHandler(t, p.journalFiles[len(p.journalFiles)-1]); err != nil {
 			return err
 		}
 	}
 
-	tb.transaction = nil
+	tb.transaction = journal.NewTransaction()
 	tb.currentPosting = nil
 	return nil
 }
