@@ -17,11 +17,11 @@ const (
 )
 
 type transactionBuilder struct {
-	transactionType     transactionType             // the type of the transaction being built
-	transaction         journal.Transaction         // the transaction we're building
-	periodicTransaction journal.PeriodicTransaction // the periodic transaction we're building
-	currentPosting      *journal.Posting            // the current posting for the transaction
-	previousItemType    itemType                    // the previous item we were given
+	transactionType     transactionType              // the type of the transaction being built
+	transaction         *journal.Transaction         // the transaction we're building
+	periodicTransaction *journal.PeriodicTransaction // the periodic transaction we're building
+	currentPosting      *journal.Posting             // the current posting for the transaction
+	previousItemType    itemType                     // the previous item we were given
 }
 
 func newTransactionBuilder() transactionBuilder {
@@ -36,20 +36,22 @@ func (tb *transactionBuilder) beginTransaction(t transactionType) {
 	tb.transactionType = t
 	switch t {
 	case normalTransaction:
-		tb.transaction = journal.NewTransaction()
+		transaction := journal.NewTransaction()
+		tb.transaction = &transaction
 	case periodicTransaction:
-		tb.periodicTransaction = journal.NewPeriodicTransaction()
+		transaction := journal.NewPeriodicTransaction()
+		tb.periodicTransaction = &transaction
 	}
 }
 
 func (tb *transactionBuilder) build(t itemType, content []rune) error {
 	switch tb.transactionType {
 	case normalTransaction:
-		if err := tb.buildNormalTransaction(&tb.transaction, t, content); err != nil {
+		if err := tb.buildNormalTransaction(tb.transaction, t, content); err != nil {
 			return err
 		}
 	case periodicTransaction:
-		if err := tb.buildPeriodicTransaction(&tb.periodicTransaction, t, content); err != nil {
+		if err := tb.buildPeriodicTransaction(tb.periodicTransaction, t, content); err != nil {
 			return err
 		}
 	}
@@ -165,43 +167,58 @@ func (tb *transactionBuilder) buildPeriodicTransaction(t *journal.PeriodicTransa
 }
 
 func (tb *transactionBuilder) endTransaction(p Parser) error {
-	// If the transaction hasn't been modified, end here
-	if tb.transaction.Date.IsZero() {
-		return nil
-	}
-
 	switch tb.transactionType {
 	case normalTransaction:
-		return tb.endNormalTransaction(&tb.transaction, p)
+		// If there is no transaction, bail here
+		if tb.transaction == nil {
+			return nil
+		}
+
+		if err := tb.endNormalTransaction(tb.transaction, p); err != nil {
+			return err
+		}
+
+		if p.transactionHandler != nil {
+			if err := p.transactionHandler(tb.transaction, p.journalFiles[len(p.journalFiles)-1]); err != nil {
+				return err
+			}
+		}
+
+		tb.transaction = nil
 	case periodicTransaction:
-		return tb.endNormalTransaction(&tb.periodicTransaction.Transaction, p)
+		// If there is no transaction, bail here
+		if tb.periodicTransaction == nil {
+			return nil
+		}
+
+		if err := tb.endNormalTransaction(&tb.periodicTransaction.Transaction, p); err != nil {
+			return err
+		}
+
+		if p.periodicTransactionHandler != nil {
+			if err := p.periodicTransactionHandler(tb.periodicTransaction, p.journalFiles[len(p.journalFiles)-1]); err != nil {
+				return err
+			}
+		}
+
+		tb.periodicTransaction = nil
 	}
 
+	tb.currentPosting = nil
 	return nil
 }
 
 func (tb *transactionBuilder) endNormalTransaction(t *journal.Transaction, p Parser) error {
-	var err error
-
 	// Make sure we add the last open posting
 	if tb.currentPosting != nil {
-		err = t.AddPosting(tb.currentPosting)
-		if err != nil {
+		if err := t.AddPosting(tb.currentPosting); err != nil {
 			return err
 		}
 	}
 
-	if err = t.Close(); err != nil {
+	if err := t.Close(); err != nil {
 		return err
 	}
 
-	if p.transactionHandler != nil {
-		if err = p.transactionHandler(t, p.journalFiles[len(p.journalFiles)-1]); err != nil {
-			return err
-		}
-	}
-
-	tb.transaction = journal.NewTransaction()
-	tb.currentPosting = nil
 	return nil
 }
