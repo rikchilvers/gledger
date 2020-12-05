@@ -9,7 +9,7 @@ import (
 
 var (
 	flattenTree bool
-	elideZero   bool
+	showZero    bool
 )
 
 var balanceCmd = &cobra.Command{
@@ -23,13 +23,14 @@ var balanceCmd = &cobra.Command{
 			fmt.Println(err)
 			return
 		}
+		jb.prepare()
 		jb.report()
 	},
 }
 
 func init() {
 	balanceCmd.Flags().BoolVarP(&flattenTree, "flat", "l", false, "show accounts as a flat list")
-	balanceCmd.Flags().BoolVarP(&elideZero, "empty", "E", true, "show accounts with zero amount")
+	balanceCmd.Flags().BoolVarP(&showZero, "empty", "E", false, "show accounts with zero amount")
 	rootCmd.AddCommand(balanceCmd)
 }
 
@@ -49,6 +50,23 @@ func (jb *journalBalance) transactionHandler(t *journal.Transaction, path string
 		return err
 	}
 	return nil
+}
+
+func (jb journalBalance) prepare() {
+	if !showZero {
+		matcher := func(a journal.Account) bool {
+			return a.Amount.Quantity == 0
+		}
+		matching := jb.rootAccount.FindAccounts(matcher)
+		for _, m := range matching {
+			if m.Name == journal.RootID {
+				continue
+			}
+			// remove the account from it's parent
+			delete(m.Parent.Children, m.Name)
+			m.Parent = nil
+		}
+	}
 }
 
 func (jb journalBalance) report() {

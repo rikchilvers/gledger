@@ -267,6 +267,7 @@ func (a Account) Leaves() []*Account {
 	return a.FindAccounts(matcher)
 }
 
+// FindAccounts walks the account tree and returns matching accounts
 func (a Account) FindAccounts(matcher func(a Account) bool) []*Account {
 	found := make([]*Account, 0, 5)
 	found = append(found, a.findAccounts(matcher, found)...)
