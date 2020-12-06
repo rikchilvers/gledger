@@ -53,6 +53,17 @@ func (a *Account) Path() string {
 	}
 }
 
+// WalkAncestors calls `action` on this account and all its ancestors
+func (a *Account) WalkAncestors(action func(*Account) error) error {
+	if err := action(a); err != nil {
+		return err
+	}
+	if a.Parent == nil {
+		return nil
+	}
+	return a.Parent.WalkAncestors(action)
+}
+
 // NewAccount creates an Account
 func NewAccount(name string) *Account {
 	return &Account{
