@@ -18,6 +18,10 @@ func NewAmount(c string, q int64) *Amount {
 	}
 }
 
+func (a Amount) String() string {
+	return a.DisplayableQuantity(false)
+}
+
 // DisplayableQuantity formats the Amount's commodity and quantity
 func (a Amount) DisplayableQuantity(withCommodity bool) string {
 	q := float64(a.Quantity) / 100
