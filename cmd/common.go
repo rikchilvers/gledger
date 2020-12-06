@@ -31,25 +31,28 @@ func parse(th parser.TransactionHandler, ph parser.PeriodicTransactionHandler) e
 }
 
 // linkTransaction builds the account tree
-func linkTransaction(r *journal.Account, t *journal.Transaction, filePath string) error {
-	// Add postings to accounts
-	for _, p := range t.Postings {
-		// Wire up the account for the posting
-		p.Account = r.FindOrCreateAccount(strings.Split(p.AccountPath, ":"))
-
-		// Apply amount to each the account and all its ancestors
-		account := p.Account
-		for {
-			if account.Parent == nil {
-				break
-			}
-			account.Amount.Quantity += p.Amount.Quantity
-			account = account.Parent
+func linkTransaction(root *journal.Account, transaction *journal.Transaction, _ string) error {
+	for _, p := range transaction.Postings {
+		// Use the parsed account path to find or create the account
+		if p.Account == nil {
+			p.Account = root.FindOrCreateAccount(strings.Split(p.AccountPath, ":"))
 		}
 
-		// Tie up references
+		// Add postings to accounts
 		p.Account.Postings = append(p.Account.Postings, p)
-		p.Account.Transactions = append(p.Account.Transactions, t)
+
+		// Add the transaction to the account
+		p.Account.Transactions = append(p.Account.Transactions, transaction)
+
+		// Add the posting's amount to the account and all its ancestors
+		if err := p.Account.WalkAncestors(func(a *journal.Account) error {
+			if err := a.Amount.Add(p.Amount); err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
 	}
 
 	return nil
