@@ -1,6 +1,9 @@
 package journal
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 const (
 	RootID       string = "_root_"
@@ -15,7 +18,7 @@ type Journal struct {
 	budgetRoot           *Account
 }
 
-func newJournal() Journal {
+func NewJournal() Journal {
 	return Journal{
 		transactions:         make([]*Transaction, 0, 256),
 		periodicTransactions: make([]*PeriodicTransaction, 0, 256),
@@ -25,11 +28,12 @@ func newJournal() Journal {
 	}
 }
 
-func (j *Journal) addTransaction(t *Transaction, locationHint string) error {
-	return nil
+func (j *Journal) AddTransaction(t *Transaction, locationHint string) error {
+	// TODO: make filePaths an indexed map
+	return j.linkTransaction(t)
 }
 
-func (j *Journal) addPeriodicTransaction(t *PeriodicTransaction, locationHint string) error {
+func (j *Journal) AddPeriodicTransaction(t *PeriodicTransaction, locationHint string) error {
 	return nil
 }
 
@@ -62,4 +66,41 @@ func (j *Journal) linkTransaction(transaction *Transaction) error {
 	}
 
 	return nil
+}
+
+func (j *Journal) Prepare(showZero bool) {
+	if !showZero {
+		matcher := func(a Account) bool {
+			return a.Amount.Quantity == 0
+		}
+		matching := j.root.FindAccounts(matcher)
+		for _, m := range matching {
+			if m.Name == RootID {
+				continue
+			}
+			// remove the account from it's parent
+			delete(m.Parent.Children, m.Name)
+			m.Parent = nil
+		}
+	}
+}
+
+func (j *Journal) Report(flattenTree bool) {
+	prepender := func(a Account) string {
+		return fmt.Sprintf("%20s  ", a.Amount.DisplayableQuantity(true))
+	}
+
+	if flattenTree {
+		flattened := j.root.FlattenedTree(prepender)
+		fmt.Println(flattened)
+	} else {
+		tree := j.root.Tree(prepender)
+		fmt.Println(tree)
+	}
+
+	// 20x '-' because that is how wide we format the amount to be
+	fmt.Println("--------------------")
+
+	// Print the root account's value
+	fmt.Printf("%20s\n", j.root.Amount.DisplayableQuantity(false))
 }
