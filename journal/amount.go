@@ -40,3 +40,12 @@ func (a *Amount) Add(other *Amount) error {
 	a.Quantity += other.Quantity
 	return nil
 }
+
+func (a *Amount) Subtract(other *Amount) error {
+	if a.Commodity != other.Commodity {
+		// return errors.New("unhandled addition of unmatched commodities")
+		// fmt.Println("unhandled addition of unmatched commodities")
+	}
+	a.Quantity -= other.Quantity
+	return nil
+}
