@@ -31,3 +31,12 @@ func (a Amount) DisplayableQuantity(withCommodity bool) string {
 	}
 	return amount
 }
+
+func (a *Amount) Add(other *Amount) error {
+	if a.Commodity != other.Commodity {
+		// return errors.New("unhandled addition of unmatched commodities")
+		// fmt.Println("unhandled addition of unmatched commodities")
+	}
+	a.Quantity += other.Quantity
+	return nil
+}
