@@ -7,16 +7,29 @@ import (
 	"github.com/rikchilvers/gledger/shared"
 )
 
-const RootID string = "_root_"
-
 // Account is the
 type Account struct {
-	Name         string
-	Amount       Amount
-	Parent       *Account
-	Children     map[string]*Account
-	Postings     []*Posting
-	Transactions []*Transaction
+	Name           string
+	Path           string
+	PathComponents []string
+	Amount         Amount
+	Parent         *Account
+	Children       map[string]*Account
+	Postings       []*Posting
+	Transactions   []*Transaction
+}
+
+// NewAccount creates an Account
+func NewAccount(name string) *Account {
+	return &Account{
+		Name:           name,
+		Path:           "",
+		PathComponents: make([]string, 0, 5),
+		Parent:         nil,
+		Children:       make(map[string]*Account),
+		Postings:       make([]*Posting, 0, 2048),
+		Transactions:   make([]*Transaction, 0, 1024),
+	}
 }
 
 func (a *Account) String() string {
@@ -39,16 +52,27 @@ func (a *Account) asString(level int) string {
 	return s
 }
 
-// Path creates a : delimited string from the Account's ancestry
+// CreatePath creates a : delimited string from the Account's ancestry
 // TODO: set this as a variable from the posting
-func (a *Account) Path() string {
+func (a *Account) CreatePath() string {
 	path := a.Name
 	current := a
 	for {
-		if current.Parent == nil || current.Parent.Name == RootID {
+		if current.Parent == nil || current.Parent.Name == RootID || current.Parent.Name == BudgetRootID {
 			return path
 		}
 		path = fmt.Sprintf("%s:%s", current.Parent.Name, path)
+		current = current.Parent
+	}
+}
+
+// Head returns the oldest ancestor that is not root
+func (a *Account) Head() *Account {
+	current := a
+	for {
+		if current.Parent == nil || current.Parent.Name == RootID || current.Parent.Name == BudgetRootID {
+			return current
+		}
 		current = current.Parent
 	}
 }
@@ -62,17 +86,6 @@ func (a *Account) WalkAncestors(action func(*Account) error) error {
 		return nil
 	}
 	return a.Parent.WalkAncestors(action)
-}
-
-// NewAccount creates an Account
-func NewAccount(name string) *Account {
-	return &Account{
-		Name:         name,
-		Parent:       nil,
-		Children:     make(map[string]*Account),
-		Postings:     make([]*Posting, 0, 2048),
-		Transactions: make([]*Transaction, 0, 1024),
-	}
 }
 
 // Adds descending child accounts to a parent
@@ -257,9 +270,9 @@ func (a *Account) flattenedTree(prepender func(a Account) string, current string
 	if len(a.Children) == 0 {
 		if len(current) == 0 {
 			// Don't add a newline at the start
-			return fmt.Sprintf("%s%s%s", current, prepender(*a), a.Path())
+			return fmt.Sprintf("%s%s%s", current, prepender(*a), a.Path)
 		} else {
-			return fmt.Sprintf("%s\n%s%s", current, prepender(*a), a.Path())
+			return fmt.Sprintf("%s\n%s%s", current, prepender(*a), a.Path)
 		}
 	}
 
