@@ -89,4 +89,10 @@ func TestAmountItemParsing(t *testing.T) {
 	if err == nil {
 		t.Fatalf("parser returns no error for incorrectly formed amount: %s", err)
 	}
+
+	builder.previousItemType = commodityItem
+	err = builder.build(amountItem, []rune("8g1"))
+	if err == nil {
+		t.Fatalf("parser returns no error for incorrectly formed amount: %s", err)
+	}
 }
