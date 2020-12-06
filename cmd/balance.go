@@ -69,6 +69,7 @@ func (jb journalBalance) prepare() {
 	}
 }
 
+// TODO move this to common.go
 func (jb journalBalance) report() {
 	prepender := func(a journal.Account) string {
 		return fmt.Sprintf("%20s  ", a.Amount.DisplayableQuantity(true))
