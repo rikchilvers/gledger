@@ -8,6 +8,8 @@ import (
 const (
 	RootID       string = "_root_"
 	BudgetRootID string = "_budget_root_"
+	// TODO allow this to be set by the user
+	ExpensesID string = "Expenses"
 )
 
 type Journal struct {
@@ -47,14 +49,14 @@ func (j *Journal) linkTransaction(transaction *Transaction) error {
 			p.Account.PathComponents = pathComponents
 		}
 
-		// Add postings to accounts
+		// Add the posting to its account's postings
 		p.Account.Postings = append(p.Account.Postings, p)
 
 		// Add the transaction to the account and the journal
 		p.Account.Transactions = append(p.Account.Transactions, transaction)
 		j.transactions = append(j.transactions, transaction)
 
-		// Add the posting's amount to the account and all its ancestors
+		// Add the posting's amount to the account and all of its ancestors
 		if err := p.Account.WalkAncestors(func(a *Account) error {
 			if err := a.Amount.Add(p.Amount); err != nil {
 				return err
@@ -63,6 +65,29 @@ func (j *Journal) linkTransaction(transaction *Transaction) error {
 		}); err != nil {
 			return err
 		}
+
+		// Handle budget posting
+		if p.Account.PathComponents[0] == ExpensesID {
+			if err := j.handleBudgetPosting(p); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (j *Journal) handleBudgetPosting(posting *Posting) error {
+	account := j.budgetRoot.FindOrCreateAccount(posting.Account.PathComponents)
+
+	// Subtract the posting's amount from the account and all of its ancestors
+	if err := account.WalkAncestors(func(a *Account) error {
+		if err := a.Amount.Subtract(posting.Amount); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return err
 	}
 
 	return nil
