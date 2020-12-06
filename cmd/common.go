@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 
@@ -28,6 +29,26 @@ func parse(th parser.TransactionHandler, ph parser.PeriodicTransactionHandler) e
 		return err
 	}
 	return nil
+}
+
+func report(account *journal.Account, flattenTree bool) {
+	prepender := func(a journal.Account) string {
+		return fmt.Sprintf("%20s  ", a.Amount.DisplayableQuantity(true))
+	}
+
+	if flattenTree {
+		flattened := account.FlattenedTree(prepender)
+		fmt.Println(flattened)
+	} else {
+		tree := account.Tree(prepender)
+		fmt.Println(tree)
+	}
+
+	// 20x '-' because that is how wide we format the amount to be
+	fmt.Println("--------------------")
+
+	// Print the root account's value
+	fmt.Printf("%20s\n", account.Amount.DisplayableQuantity(false))
 }
 
 // linkTransaction builds the account tree

@@ -1,7 +1,6 @@
 package journal
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -16,8 +15,8 @@ type Journal struct {
 	transactions         []*Transaction
 	periodicTransactions []*PeriodicTransaction
 	filePaths            []string // the
-	root                 *Account
-	budgetRoot           *Account
+	Root                 *Account
+	BudgetRoot           *Account
 }
 
 func NewJournal() Journal {
@@ -25,8 +24,8 @@ func NewJournal() Journal {
 		transactions:         make([]*Transaction, 0, 256),
 		periodicTransactions: make([]*PeriodicTransaction, 0, 256),
 		filePaths:            make([]string, 0, 10),
-		root:                 NewAccount(RootID),
-		budgetRoot:           NewAccount(BudgetRootID),
+		Root:                 NewAccount(RootID),
+		BudgetRoot:           NewAccount(BudgetRootID),
 	}
 }
 
@@ -44,7 +43,7 @@ func (j *Journal) linkTransaction(transaction *Transaction) error {
 		// Use the parsed account path to find or create the account
 		if p.Account == nil {
 			pathComponents := strings.Split(p.AccountPath, ":")
-			p.Account = j.root.FindOrCreateAccount(pathComponents)
+			p.Account = j.Root.FindOrCreateAccount(pathComponents)
 			p.Account.Path = p.AccountPath
 			p.Account.PathComponents = pathComponents
 		}
@@ -78,7 +77,7 @@ func (j *Journal) linkTransaction(transaction *Transaction) error {
 }
 
 func (j *Journal) handleBudgetPosting(posting *Posting) error {
-	account := j.budgetRoot.FindOrCreateAccount(posting.Account.PathComponents)
+	account := j.BudgetRoot.FindOrCreateAccount(posting.Account.PathComponents)
 
 	// Subtract the posting's amount from the account and all of its ancestors
 	if err := account.WalkAncestors(func(a *Account) error {
@@ -98,7 +97,7 @@ func (j *Journal) Prepare(showZero bool) {
 		matcher := func(a Account) bool {
 			return a.Amount.Quantity == 0
 		}
-		matching := j.root.FindAccounts(matcher)
+		matching := j.Root.FindAccounts(matcher)
 		for _, m := range matching {
 			if m.Name == RootID {
 				continue
@@ -108,24 +107,4 @@ func (j *Journal) Prepare(showZero bool) {
 			m.Parent = nil
 		}
 	}
-}
-
-func (j *Journal) Report(flattenTree bool) {
-	prepender := func(a Account) string {
-		return fmt.Sprintf("%20s  ", a.Amount.DisplayableQuantity(true))
-	}
-
-	if flattenTree {
-		flattened := j.root.FlattenedTree(prepender)
-		fmt.Println(flattened)
-	} else {
-		tree := j.root.Tree(prepender)
-		fmt.Println(tree)
-	}
-
-	// 20x '-' because that is how wide we format the amount to be
-	fmt.Println("--------------------")
-
-	// Print the root account's value
-	fmt.Printf("%20s\n", j.root.Amount.DisplayableQuantity(false))
 }

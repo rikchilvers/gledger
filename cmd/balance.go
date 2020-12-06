@@ -24,7 +24,9 @@ var balanceCmd = &cobra.Command{
 			return
 		}
 		journal.Prepare(showZero)
-		journal.Report(flattenTree)
+		report(journal.Root, flattenTree)
+		fmt.Println("")
+		report(journal.BudgetRoot, flattenTree)
 	},
 }
 
