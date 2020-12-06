@@ -21,7 +21,7 @@ var statsCmd = &cobra.Command{
 	SilenceUsage: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		js := newJournalStatistics()
-		if err := parse(js.transactionHandler); err != nil {
+		if err := parse(js.transactionHandler, nil); err != nil {
 			fmt.Println(err)
 			return
 		}
