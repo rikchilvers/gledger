@@ -31,7 +31,7 @@ func parse(th parser.TransactionHandler, ph parser.PeriodicTransactionHandler) e
 }
 
 // linkTransaction builds the account tree
-func linkTransaction(r *journal.Account, t *journal.Transaction, fp string) error {
+func linkTransaction(r *journal.Account, t *journal.Transaction, filePath string) error {
 	// Add postings to accounts
 	for _, p := range t.Postings {
 		// Wire up the account for the posting

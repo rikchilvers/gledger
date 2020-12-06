@@ -82,7 +82,7 @@ func (jb journalBalance) report() {
 		fmt.Println(tree)
 	}
 
-	// 20 - because that is how wide we format the amount to be
+	// 20x '-' because that is how wide we format the amount to be
 	fmt.Println("--------------------")
 
 	// Print the root account's value
