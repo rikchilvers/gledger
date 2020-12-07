@@ -12,7 +12,7 @@ var budgetCmd = &cobra.Command{
 	Aliases:      []string{"bal", "b"},
 	Short:        "Shows accounts and their balances",
 	SilenceUsage: true,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		l := newLedger()
 		if err := parse(l.transactionHandler, l.periodicTransactionHandler); err != nil {
 			fmt.Println(err)

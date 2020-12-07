@@ -31,6 +31,7 @@ func parse(th parser.TransactionHandler, ph parser.PeriodicTransactionHandler) e
 	return nil
 }
 
+// report prints the given account and it's descendents
 func report(account *journal.Account, flattenTree bool) {
 	prepender := func(a journal.Account) string {
 		return fmt.Sprintf("%20s  ", a.Amount.DisplayableQuantity(true))
