@@ -73,12 +73,18 @@ I0:I1`
 	componentsEc := []string{"E0", "E1b", "E2b"}
 	componentsIa := []string{"I0", "I1"}
 	root := NewAccount(RootID)
-	root.FindOrCreateAccount(componentsAa)
-	root.FindOrCreateAccount(componentsAb)
-	root.FindOrCreateAccount(componentsEa)
-	root.FindOrCreateAccount(componentsEb)
-	root.FindOrCreateAccount(componentsEc)
-	root.FindOrCreateAccount(componentsIa)
+	aa := root.FindOrCreateAccount(componentsAa)
+	ab := root.FindOrCreateAccount(componentsAb)
+	ea := root.FindOrCreateAccount(componentsEa)
+	eb := root.FindOrCreateAccount(componentsEb)
+	ec := root.FindOrCreateAccount(componentsEc)
+	ia := root.FindOrCreateAccount(componentsIa)
+	aa.Path = aa.CreatePath()
+	ab.Path = ab.CreatePath()
+	ea.Path = ea.CreatePath()
+	eb.Path = eb.CreatePath()
+	ec.Path = ec.CreatePath()
+	ia.Path = ia.CreatePath()
 
 	return root, f, t
 }
@@ -156,7 +162,7 @@ func TestAccountPathGeneration(t *testing.T) {
 	components := []string{"assets", "current"}
 	account := newAccountWithChildren(components, nil)
 
-	if account.Path() != "assets:current" {
+	if account.CreatePath() != "assets:current" {
 		t.Fatalf("account generates incorrect path")
 	}
 }
