@@ -5,10 +5,12 @@ import (
 )
 
 const (
-	RootID       string = "_root_"
-	BudgetRootID string = "_budget_root_"
-	// TODO allow this to be set by the user
+	RootID         string = "_root_"
+	BudgetRootID   string = "_budget_root_"
+	ToBeBudgetedID string = "To Be Budgeted"
+	// TODO allow these to be set by the user
 	ExpensesID string = "Expenses"
+	IncomeID   string = "Income"
 )
 
 type Journal struct {
@@ -20,13 +22,19 @@ type Journal struct {
 }
 
 func NewJournal() Journal {
-	return Journal{
+	j := Journal{
 		transactions:         make([]*Transaction, 0, 256),
 		periodicTransactions: make([]*PeriodicTransaction, 0, 256),
 		filePaths:            make([]string, 0, 10),
 		Root:                 NewAccount(RootID),
 		BudgetRoot:           NewAccount(BudgetRootID),
 	}
+
+	tbb := NewAccount(ToBeBudgetedID)
+	tbb.Parent = j.BudgetRoot
+	j.BudgetRoot.Children[ToBeBudgetedID] = tbb
+
+	return j
 }
 
 func (j *Journal) AddTransaction(t *Transaction, locationHint string) error {
