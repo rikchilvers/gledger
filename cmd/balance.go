@@ -19,7 +19,7 @@ var balanceCmd = &cobra.Command{
 	SilenceUsage: true,
 	Run: func(_ *cobra.Command, _ []string) {
 		journal := journal.NewJournal()
-		if err := parse(journal.AddTransaction, nil); err != nil {
+		if err := parse(journal.AddTransaction, journal.AddPeriodicTransaction); err != nil {
 			fmt.Println(err)
 			return
 		}
