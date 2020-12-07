@@ -1,7 +1,9 @@
 package journal
 
 import (
+	"fmt"
 	"strings"
+	"time"
 )
 
 const (
@@ -42,7 +44,31 @@ func (j *Journal) AddTransaction(t *Transaction, locationHint string) error {
 	return j.linkTransaction(t)
 }
 
-func (j *Journal) AddPeriodicTransaction(t *PeriodicTransaction, locationHint string) error {
+func (j *Journal) AddPeriodicTransaction(pt *PeriodicTransaction, locationHint string) error {
+	// Add the periodic transaction to the journal
+	j.periodicTransactions = append(j.periodicTransactions, pt)
+
+	if pt.Period.Interval == PNone {
+		// Handle budget allocations differently
+		// PeriodicTransaction with no interval are considered budget transactions
+		// TODO gate behind budget flag
+		return j.linkBudgetTransaction(&pt.Transaction)
+	}
+
+	// Convert the periodic transaction to real transactions then link them
+	// TODO take time bounds for running periodic transactions
+	transactions := pt.Run(time.Time{}, time.Time{})
+	for _, p := range transactions {
+		if err := j.linkTransaction(&p); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (j *Journal) linkBudgetTransaction(t *Transaction) error {
+	fmt.Println("would handle budget transaction")
 	return nil
 }
 
@@ -73,9 +99,18 @@ func (j *Journal) linkTransaction(transaction *Transaction) error {
 			return err
 		}
 
-		// Handle budget posting
+		// Handle budget posting if this posting is an Expense
+		// TODO gate behind budget flag
 		if p.Account.PathComponents[0] == ExpensesID {
-			if err := j.handleBudgetPosting(p); err != nil {
+			if err := j.handleExpensesPosting(p); err != nil {
+				return err
+			}
+		}
+
+		// Handle income for budgeting
+		// TODO gate behind budget flag
+		if p.Account.PathComponents[0] == IncomeID {
+			if err := j.handleIncomePosting(p); err != nil {
 				return err
 			}
 		}
@@ -84,7 +119,24 @@ func (j *Journal) linkTransaction(transaction *Transaction) error {
 	return nil
 }
 
-func (j *Journal) handleBudgetPosting(posting *Posting) error {
+func (j *Journal) handleIncomePosting(posting *Posting) error {
+	// Add the income to 'To Be Budgeted'
+	tbb := j.BudgetRoot.Children[ToBeBudgetedID]
+
+	// We subtract to make the income positive
+	if err := tbb.WalkAncestors(func(a *Account) error {
+		if err := a.Amount.Subtract(posting.Amount); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (j *Journal) handleExpensesPosting(posting *Posting) error {
 	account := j.BudgetRoot.FindOrCreateAccount(posting.Account.PathComponents)
 
 	// Subtract the posting's amount from the account and all of its ancestors
