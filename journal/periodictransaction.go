@@ -43,9 +43,9 @@ func NewPeriodicTransaction() PeriodicTransaction {
 // Run converts a single PeriodicTransaction into an array of Transactions for a given date span
 // Does not extend time bounds to match parameters
 func (pt PeriodicTransaction) Run(start, end time.Time) []Transaction {
-	// If this is a budget transaction, just return it
+	// You can't Run() budget transactions
 	if pt.Period.Interval == PNone {
-		return []Transaction{pt.Transaction}
+		panic("cannot run a budget transaction")
 	}
 
 	// Check if this transaction is outside the time bounds
