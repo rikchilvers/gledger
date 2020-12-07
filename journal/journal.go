@@ -67,8 +67,45 @@ func (j *Journal) AddPeriodicTransaction(pt *PeriodicTransaction, locationHint s
 	return nil
 }
 
-func (j *Journal) linkBudgetTransaction(t *Transaction) error {
-	fmt.Println("would handle budget transaction")
+// linkBudgetTransaction wires up allocations to the budget
+func (j *Journal) linkBudgetTransaction(transaction *Transaction) error {
+	// essentially, we want to move money from tbb to the account
+
+	fmt.Println("linking budget transaction")
+
+	// TODO much of this could be extracted as it is similar to linkTransaction's
+	for _, p := range transaction.Postings {
+		fmt.Println("handling", p)
+		if p.Account == nil {
+			pathComponents := strings.Split(p.AccountPath, ":")
+			p.Account = j.BudgetRoot.FindOrCreateAccount(pathComponents)
+			p.Account.Path = p.AccountPath
+			p.Account.PathComponents = pathComponents
+		}
+
+		// Add the posting to its account's postings
+		p.Account.Postings = append(p.Account.Postings, p)
+
+		// Add the transaction to the account and the journal
+		p.Account.Transactions = append(p.Account.Transactions, transaction)
+		// TODO should we add budget transactions to the journal's transaction list?
+		// j.transactions = append(j.transactions, transaction)
+
+		// Add the posting's amount to the account and all of its ancestors
+		if err := p.Account.WalkAncestors(func(a *Account) error {
+			if err := a.Amount.Add(p.Amount); err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+
+		// Subtract the posting's amount from To Be Budgeted
+		tbb := j.BudgetRoot.Children[ToBeBudgetedID]
+		tbb.Amount.Subtract(p.Amount)
+	}
+
 	return nil
 }
 
