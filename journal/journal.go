@@ -1,7 +1,6 @@
 package journal
 
 import (
-	"fmt"
 	"strings"
 	"time"
 )
@@ -70,8 +69,6 @@ func (j *Journal) AddPeriodicTransaction(pt *PeriodicTransaction, locationHint s
 // linkBudgetTransaction wires up allocations to the budget
 func (j *Journal) linkBudgetTransaction(transaction *Transaction) error {
 	// essentially, we want to move money from tbb to the account
-
-	fmt.Println("linking budget transaction")
 
 	// TODO much of this could be extracted as it is similar to linkTransaction's
 	for _, p := range transaction.Postings {
