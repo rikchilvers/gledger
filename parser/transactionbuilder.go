@@ -96,11 +96,6 @@ func (tb *transactionBuilder) buildNormalTransaction(t *journal.Transaction, ite
 			return fmt.Errorf("expected account but got %s", item)
 		}
 
-		// Skip period transactions
-		if tb.transactionType == periodicTransaction {
-			break
-		}
-
 		// Accounts start a posting, so check if we need to start a new one
 		// (When a transaction is started, the current posting is set to nil)
 		if tb.currentPosting != nil {
@@ -116,11 +111,6 @@ func (tb *transactionBuilder) buildNormalTransaction(t *journal.Transaction, ite
 			return fmt.Errorf("expected currency but got %s", item)
 		}
 
-		// Skip period transactions
-		if tb.transactionType == periodicTransaction {
-			break
-		}
-
 		if tb.currentPosting.Amount == nil {
 			tb.currentPosting.Amount = journal.NewAmount(string(content), 0)
 		} else {
@@ -129,11 +119,6 @@ func (tb *transactionBuilder) buildNormalTransaction(t *journal.Transaction, ite
 	case amountItem:
 		if tb.previousItemType != commodityItem && tb.previousItemType != payeeItem {
 			return fmt.Errorf("expected amount but got %s", item)
-		}
-
-		// Skip period transactions
-		if tb.transactionType == periodicTransaction {
-			break
 		}
 
 		if tb.currentPosting.Amount == nil {
@@ -160,6 +145,7 @@ func (tb *transactionBuilder) buildPeriodicTransaction(t *journal.PeriodicTransa
 		t.Period = period
 	default:
 		// In all other cases, we just want to build the normal transaction
+		// fmt.Println("deferring to buildNormalTransaction")
 		return tb.buildNormalTransaction(&t.Transaction, i, content)
 	}
 
@@ -213,6 +199,24 @@ func (tb *transactionBuilder) endNormalTransaction(t *journal.Transaction, p Par
 	if tb.currentPosting != nil {
 		if err := t.AddPosting(tb.currentPosting); err != nil {
 			return err
+		}
+	}
+
+	// Before we close a budget transaction, we need to add the 'To Be Budgeted' account
+	if tb.transactionType == periodicTransaction && tb.periodicTransaction.Period.Interval == journal.PNone {
+		hasBudgetSource := false
+		for _, p := range t.Postings {
+			if p.AccountPath == journal.ToBeBudgetedID {
+				hasBudgetSource = true
+				break
+			}
+		}
+
+		if !hasBudgetSource {
+			source := journal.NewPosting()
+			source.Transaction = t
+			source.AccountPath = journal.ToBeBudgetedID
+			t.AddPosting(source)
 		}
 	}
 
