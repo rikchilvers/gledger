@@ -75,7 +75,6 @@ func (j *Journal) linkBudgetTransaction(transaction *Transaction) error {
 
 	// TODO much of this could be extracted as it is similar to linkTransaction's
 	for _, p := range transaction.Postings {
-		fmt.Println("handling", p)
 		if p.Account == nil {
 			pathComponents := strings.Split(p.AccountPath, ":")
 			p.Account = j.BudgetRoot.FindOrCreateAccount(pathComponents)

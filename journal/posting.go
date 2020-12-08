@@ -14,7 +14,6 @@ type Posting struct {
 // NewPosting creates a Posting
 func NewPosting() *Posting {
 	return &Posting{
-		// id:            uuid.Nil,
 		Transaction: nil,
 		Comments:    make([]string, 0),
 		Account:     nil,
