@@ -170,7 +170,7 @@ func (j *Journal) handleIncomePosting(posting *Posting) error {
 }
 
 func (j *Journal) handleExpensesPosting(posting *Posting) error {
-	account := j.BudgetRoot.FindOrCreateAccount(posting.Account.PathComponents)
+	account := j.BudgetRoot.FindOrCreateAccount(posting.Account.PathComponents[1:])
 
 	// Subtract the posting's amount from the account and all of its ancestors
 	if err := account.WalkAncestors(func(a *Account) error {
