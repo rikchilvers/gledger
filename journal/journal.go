@@ -66,36 +66,42 @@ func (j *Journal) AddPeriodicTransaction(pt *PeriodicTransaction, locationHint s
 	return nil
 }
 
-// linkBudgetTransaction wires up allocations to the budget
-func (j *Journal) linkBudgetTransaction(transaction *Transaction) error {
-	// essentially, we want to move money from tbb to the account
+func wireUpPosting(root *Account, transaction *Transaction, p *Posting) error {
+	if p.Account == nil {
+		pathComponents := strings.Split(p.AccountPath, ":")
+		p.Account = root.FindOrCreateAccount(pathComponents)
+		p.Account.Path = p.AccountPath
+		p.Account.PathComponents = pathComponents
+	}
 
-	// TODO much of this could be extracted as it is similar to linkTransaction's
-	for _, p := range transaction.Postings {
-		if p.Account == nil {
-			pathComponents := strings.Split(p.AccountPath, ":")
-			p.Account = j.BudgetRoot.FindOrCreateAccount(pathComponents)
-			p.Account.Path = p.AccountPath
-			p.Account.PathComponents = pathComponents
-		}
+	// Add the posting to its account's postings
+	p.Account.Postings = append(p.Account.Postings, p)
 
-		// Add the posting to its account's postings
-		p.Account.Postings = append(p.Account.Postings, p)
+	// Add the transaction to the account and the journal
+	p.Account.Transactions = append(p.Account.Transactions, transaction)
 
-		// Add the transaction to the account and the journal
-		p.Account.Transactions = append(p.Account.Transactions, transaction)
-		// TODO should we add budget transactions to the journal's transaction list?
-		// j.transactions = append(j.transactions, transaction)
-
-		// Add the posting's amount to the account and all of its ancestors
-		if err := p.Account.WalkAncestors(func(a *Account) error {
-			if err := a.Amount.Add(p.Amount); err != nil {
-				return err
-			}
-			return nil
-		}); err != nil {
+	// Add the posting's amount to the account and all of its ancestors
+	if err := p.Account.WalkAncestors(func(a *Account) error {
+		if err := a.Amount.Add(p.Amount); err != nil {
 			return err
 		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// linkBudgetTransaction wires up allocations to the budget
+func (j *Journal) linkBudgetTransaction(transaction *Transaction) error {
+	for _, p := range transaction.Postings {
+		if err := wireUpPosting(j.BudgetRoot, transaction, p); err != nil {
+			return err
+		}
+
+		// TODO should we add budget transactions to the journal's transaction list?
+		// j.transactions = append(j.transactions, transaction)
 
 		// Subtract the posting's amount from To Be Budgeted
 		tbb := j.BudgetRoot.Children[ToBeBudgetedID]
@@ -107,30 +113,12 @@ func (j *Journal) linkBudgetTransaction(transaction *Transaction) error {
 
 func (j *Journal) linkTransaction(transaction *Transaction) error {
 	for _, p := range transaction.Postings {
-		// Use the parsed account path to find or create the account
-		if p.Account == nil {
-			pathComponents := strings.Split(p.AccountPath, ":")
-			p.Account = j.Root.FindOrCreateAccount(pathComponents)
-			p.Account.Path = p.AccountPath
-			p.Account.PathComponents = pathComponents
-		}
-
-		// Add the posting to its account's postings
-		p.Account.Postings = append(p.Account.Postings, p)
-
-		// Add the transaction to the account and the journal
-		p.Account.Transactions = append(p.Account.Transactions, transaction)
-		j.transactions = append(j.transactions, transaction)
-
-		// Add the posting's amount to the account and all of its ancestors
-		if err := p.Account.WalkAncestors(func(a *Account) error {
-			if err := a.Amount.Add(p.Amount); err != nil {
-				return err
-			}
-			return nil
-		}); err != nil {
+		if err := wireUpPosting(j.Root, transaction, p); err != nil {
 			return err
 		}
+
+		// Add the transaction to the list
+		j.transactions = append(j.transactions, transaction)
 
 		// Handle budget posting if this posting is an Expense
 		// TODO gate behind budget flag
