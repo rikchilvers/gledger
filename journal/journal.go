@@ -158,7 +158,12 @@ func (j *Journal) handleIncomePosting(posting *Posting) error {
 }
 
 func (j *Journal) handleExpensesPosting(posting *Posting) error {
-	account := j.BudgetRoot.FindOrCreateAccount(posting.Account.PathComponents[1:])
+	pathComponents := posting.Account.PathComponents[1:]
+	account := j.BudgetRoot.FindOrCreateAccount(pathComponents)
+	// As this account is not the same as the non-budget expenses account version
+	// we need to ask it to create its path as it drops the 'Expenses:' head
+	account.Path = account.CreatePath()
+	account.PathComponents = pathComponents
 
 	// Subtract the posting's amount from the account and all of its ancestors
 	if err := account.WalkAncestors(func(a *Account) error {
