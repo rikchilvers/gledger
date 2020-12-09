@@ -104,7 +104,6 @@ func (tb *transactionBuilder) buildNormalTransaction(t *journal.Transaction, ite
 		tb.currentPosting = journal.NewPosting()
 
 		tb.currentPosting.Transaction = t
-
 		tb.currentPosting.AccountPath = string(content)
 	case commodityItem:
 		if tb.previousItemType != accountItem {
