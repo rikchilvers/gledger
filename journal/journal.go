@@ -66,33 +66,6 @@ func (j *Journal) AddPeriodicTransaction(pt *PeriodicTransaction, locationHint s
 	return nil
 }
 
-func wireUpPosting(root *Account, transaction *Transaction, p *Posting) error {
-	if p.Account == nil {
-		pathComponents := strings.Split(p.AccountPath, ":")
-		p.Account = root.FindOrCreateAccount(pathComponents)
-		p.Account.Path = p.AccountPath
-		p.Account.PathComponents = pathComponents
-	}
-
-	// Add the posting to its account's postings
-	p.Account.Postings = append(p.Account.Postings, p)
-
-	// Add the transaction to the account and the journal
-	p.Account.Transactions = append(p.Account.Transactions, transaction)
-
-	// Add the posting's amount to the account and all of its ancestors
-	if err := p.Account.WalkAncestors(func(a *Account) error {
-		if err := a.Amount.Add(p.Amount); err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // linkBudgetTransaction wires up allocations to the budget
 func (j *Journal) linkBudgetTransaction(transaction *Transaction) error {
 	for _, p := range transaction.Postings {
@@ -135,6 +108,33 @@ func (j *Journal) linkTransaction(transaction *Transaction) error {
 				return err
 			}
 		}
+	}
+
+	return nil
+}
+
+func wireUpPosting(root *Account, transaction *Transaction, p *Posting) error {
+	if p.Account == nil {
+		pathComponents := strings.Split(p.AccountPath, ":")
+		p.Account = root.FindOrCreateAccount(pathComponents)
+		p.Account.Path = p.AccountPath
+		p.Account.PathComponents = pathComponents
+	}
+
+	// Add the posting to its account's postings
+	p.Account.Postings = append(p.Account.Postings, p)
+
+	// Add the transaction to the account and the journal
+	p.Account.Transactions = append(p.Account.Transactions, transaction)
+
+	// Add the posting's amount to the account and all of its ancestors
+	if err := p.Account.WalkAncestors(func(a *Account) error {
+		if err := a.Amount.Add(p.Amount); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return err
 	}
 
 	return nil
