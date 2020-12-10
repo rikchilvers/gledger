@@ -29,11 +29,11 @@ var balanceCmd = &cobra.Command{
 			return
 		}
 		journal.Prepare(showZero)
-		report(journal.Root, flattenTree)
+		report(*journal.Root, flattenTree)
 
 		if showBudget {
 			fmt.Println("")
-			report(journal.BudgetRoot, flattenTree)
+			report(*journal.BudgetRoot, flattenTree)
 		}
 	},
 }

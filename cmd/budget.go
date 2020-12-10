@@ -22,7 +22,7 @@ var budgetCmd = &cobra.Command{
 			return
 		}
 		journal.Prepare(showZero)
-		report(journal.Root, flattenTree)
+		report(*journal.BudgetRoot, flattenTree)
 	},
 }
 
