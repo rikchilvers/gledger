@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/rikchilvers/gledger/journal"
@@ -38,6 +39,12 @@ var balanceCmd = &cobra.Command{
 }
 
 func init() {
+	if balanceCmd.Flags().Lookup("flattenTree") != nil {
+		fmt.Println("flag is already registered")
+	}
+	if flag.Lookup("flattenTree") != nil {
+		fmt.Println("flag is already registered")
+	}
 	balanceCmd.Flags().BoolVarP(&flattenTree, "flat", "l", false, "show accounts as a flat list")
 	balanceCmd.Flags().BoolVarP(&showZero, "empty", "E", false, "show accounts with zero amount")
 	balanceCmd.Flags().BoolVarP(&showBudget, "budget", "B", false, "show budget account balances")
