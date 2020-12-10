@@ -15,7 +15,7 @@ const (
 )
 
 type Journal struct {
-	config               Config
+	config               JournalConfig
 	transactions         []*Transaction
 	periodicTransactions []*PeriodicTransaction
 	filePaths            []string // the
@@ -23,11 +23,11 @@ type Journal struct {
 	BudgetRoot           *Account
 }
 
-type Config struct {
+type JournalConfig struct {
 	CalculateBudget bool
 }
 
-func NewJournal(config Config) Journal {
+func NewJournal(config JournalConfig) Journal {
 	j := Journal{
 		config:               config,
 		transactions:         make([]*Transaction, 0, 256),
