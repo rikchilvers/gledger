@@ -17,7 +17,6 @@ func parse(th parser.TransactionHandler, ph parser.PeriodicTransactionHandler) e
 		return errors.New("no root journal path provided")
 	}
 
-	// Open the file
 	file, err := os.Open(rootJournalPath)
 	if err != nil {
 		return err
