@@ -37,9 +37,11 @@ func NewJournal(config JournalConfig) Journal {
 		BudgetRoot:           NewAccount(BudgetRootID),
 	}
 
-	tbb := NewAccount(ToBeBudgetedID)
-	tbb.Parent = j.BudgetRoot
-	j.BudgetRoot.Children[ToBeBudgetedID] = tbb
+	if config.CalculateBudget {
+		tbb := NewAccount(ToBeBudgetedID)
+		tbb.Parent = j.BudgetRoot
+		j.BudgetRoot.Children[ToBeBudgetedID] = tbb
+	}
 
 	return j
 }
