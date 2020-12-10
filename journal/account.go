@@ -310,3 +310,18 @@ func (a *Account) findAccounts(matcher func(a Account) bool, found []*Account) [
 
 	return found
 }
+
+func (a *Account) removeEmptyChildren() {
+	matcher := func(a Account) bool {
+		return a.Amount.Quantity == 0
+	}
+	matching := a.FindAccounts(matcher)
+	for _, m := range matching {
+		if m.Name == RootID {
+			continue
+		}
+		// remove the account from it's parent
+		delete(m.Parent.Children, m.Name)
+		m.Parent = nil
+	}
+}

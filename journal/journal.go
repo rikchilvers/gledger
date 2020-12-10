@@ -188,25 +188,10 @@ func (j *Journal) handleExpensesPosting(posting *Posting) error {
 
 func (j *Journal) Prepare(showZero bool) {
 	if !showZero {
-		removeEmptyAccounts(j.Root)
+		j.Root.removeEmptyChildren()
 
 		if j.config.CalculateBudget {
-			removeEmptyAccounts(j.BudgetRoot)
+			j.BudgetRoot.removeEmptyChildren()
 		}
-	}
-}
-
-func removeEmptyAccounts(account *Account) {
-	matcher := func(a Account) bool {
-		return a.Amount.Quantity == 0
-	}
-	matching := account.FindAccounts(matcher)
-	for _, m := range matching {
-		if m.Name == RootID {
-			continue
-		}
-		// remove the account from it's parent
-		delete(m.Parent.Children, m.Name)
-		m.Parent = nil
 	}
 }
