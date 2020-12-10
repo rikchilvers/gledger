@@ -6,6 +6,22 @@ import (
 	"github.com/rikchilvers/gledger/journal"
 )
 
+type treeContext struct {
+	prepender                  func(a journal.Account) string
+	depth                      int
+	isOnlyChild                bool
+	collapsedAccounts          string
+	collapsedAccountsDepth     int
+	tree                       string
+	shouldCollapseOnlyChildren bool
+}
+
+func newTreeContext(p func(a journal.Account) string) treeContext {
+	return treeContext{
+		prepender: p,
+	}
+}
+
 // Tree walks the descendents of this Account
 // and returns a string of its structure in tree form
 func Tree(a journal.Account, prepender func(a journal.Account) string) string {
@@ -15,31 +31,14 @@ func Tree(a journal.Account, prepender func(a journal.Account) string) string {
 	c := newTreeContext(prepender)
 
 	for _, childName := range a.SortedChildNames() {
-		// c = a.Children[childName].tree(c)
 		c = tree(*a.Children[childName], c)
 	}
 
 	return c.tree
 }
 
-type treeContext struct {
-	prepender              func(a journal.Account) string
-	depth                  int
-	isOnlyChild            bool
-	collapsedAccounts      string
-	collapsedAccountsDepth int
-	tree                   string
-}
-
-func newTreeContext(p func(a journal.Account) string) treeContext {
-	return treeContext{
-		prepender: p,
-	}
-}
-
 // We keep track of the current line for collapsed only children
 // TODO: return two strings (tree, collapsedAccountsLine)
-// TODO: enable prepender to be nil
 func tree(a journal.Account, c treeContext) treeContext {
 	calculateSpaces := func(depth int) string {
 		spaces := ""
@@ -53,7 +52,7 @@ func tree(a journal.Account, c treeContext) treeContext {
 	// Only children are a special case because they are collapsed to a single line
 	// For this to work with the prepender, we keep track of it separately from the tree
 	// until we reach a leaf, where we can rejoin the tree
-	if c.isOnlyChild {
+	if c.isOnlyChild && c.shouldCollapseOnlyChildren {
 		if len(a.Children) == 1 {
 			c.collapsedAccounts = fmt.Sprintf("%s:%s", c.collapsedAccounts, a.Name)
 			c.isOnlyChild = true
@@ -77,7 +76,7 @@ func tree(a journal.Account, c treeContext) treeContext {
 		}
 	} else {
 		// At this point, we know this account has siblings
-		if len(a.Children) == 1 {
+		if len(a.Children) == 1 && c.shouldCollapseOnlyChildren {
 			// If we have one child, we should add ourselves to the collapsedAccounts line
 			if len(c.collapsedAccounts) == 0 {
 				// If we're the first only child, don't add a colon
