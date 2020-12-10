@@ -15,6 +15,7 @@ const (
 )
 
 type Journal struct {
+	config               Config
 	transactions         []*Transaction
 	periodicTransactions []*PeriodicTransaction
 	filePaths            []string // the
@@ -22,8 +23,13 @@ type Journal struct {
 	BudgetRoot           *Account
 }
 
-func NewJournal() Journal {
+type Config struct {
+	CalculateBudget bool
+}
+
+func NewJournal(config Config) Journal {
 	j := Journal{
+		config:               config,
 		transactions:         make([]*Transaction, 0, 256),
 		periodicTransactions: make([]*PeriodicTransaction, 0, 256),
 		filePaths:            make([]string, 0, 10),
@@ -48,10 +54,12 @@ func (j *Journal) AddPeriodicTransaction(pt *PeriodicTransaction, locationHint s
 	j.periodicTransactions = append(j.periodicTransactions, pt)
 
 	if pt.Period.Interval == PNone {
-		// Handle budget allocations differently
-		// PeriodicTransaction with no interval are considered budget transactions
-		// TODO gate behind budget flag
-		return j.linkBudgetTransaction(&pt.Transaction)
+		if j.config.CalculateBudget {
+			// Handle budget allocations differently
+			// PeriodicTransaction with no interval are considered budget transactions
+			return j.linkBudgetTransaction(&pt.Transaction)
+		}
+		return nil
 	}
 
 	// Convert the periodic transaction to real transactions then link them
@@ -73,9 +81,6 @@ func (j *Journal) linkBudgetTransaction(transaction *Transaction) error {
 			return err
 		}
 
-		// TODO should we add budget transactions to the journal's transaction list?
-		// j.transactions = append(j.transactions, transaction)
-
 		// Subtract the posting's amount from To Be Budgeted
 		tbb := j.BudgetRoot.Children[ToBeBudgetedID]
 		tbb.Amount.Subtract(p.Amount)
@@ -93,20 +98,21 @@ func (j *Journal) linkTransaction(transaction *Transaction) error {
 		// Add the transaction to the list
 		j.transactions = append(j.transactions, transaction)
 
-		// Handle budget posting if this posting is an Expense
-		// TODO gate behind budget flag
-		if p.Account.PathComponents[0] == ExpensesID {
-			if err := j.handleExpensesPosting(p); err != nil {
-				return err
+		if j.config.CalculateBudget {
+			// Handle budget posting if this posting is an Expense
+			if p.Account.PathComponents[0] == ExpensesID {
+				if err := j.handleExpensesPosting(p); err != nil {
+					return err
+				}
 			}
-		}
 
-		// Handle income for budgeting
-		// TODO gate behind budget flag
-		if p.Account.PathComponents[0] == IncomeID {
-			if err := j.handleIncomePosting(p); err != nil {
-				return err
+			// Handle income for budgeting
+			if p.Account.PathComponents[0] == IncomeID {
+				if err := j.handleIncomePosting(p); err != nil {
+					return err
+				}
 			}
+
 		}
 	}
 
@@ -181,7 +187,10 @@ func (j *Journal) handleExpensesPosting(posting *Posting) error {
 func (j *Journal) Prepare(showZero bool) {
 	if !showZero {
 		removeEmptyAccounts(j.Root)
-		removeEmptyAccounts(j.BudgetRoot)
+
+		if j.config.CalculateBudget {
+			removeEmptyAccounts(j.BudgetRoot)
+		}
 	}
 }
 
