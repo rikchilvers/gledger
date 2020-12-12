@@ -7,9 +7,11 @@ import (
 
 const transactionHeaderWithComment string = "2020-10-11 A shop"
 
-var transactionHeader []byte = []byte("2020-10-11 A shop")
-var transactionDate string = "2020-10-11"
-var transactionPayee string = "A shop"
+var (
+	transactionHeader []byte = []byte("2020-10-11 A shop")
+	transactionDate   string = "2020-10-11"
+	transactionPayee  string = "A shop"
+)
 
 type mockParser struct {
 	lexedDate  bool
@@ -36,13 +38,65 @@ func (p *mockParser) parseItem(t itemType, content []rune) error {
 	return nil
 }
 
+func TestTakeToNextLineOrComment(t *testing.T) {
+	expected := "input test"
+	input := strings.NewReader(string("input test\n"))
+	lexer := newLexer(input, "test", nil)
+	if err := lexer.ingest(); err != nil {
+		t.Fatalf("failed to ingest")
+	}
+	output := string(lexer.takeToTabOrNextLineOrComment())
+	if output != expected {
+		t.Fatalf("newline fail expected '%s' got '%s'", expected, output)
+	}
+
+	input = strings.NewReader(string("input test;comment"))
+	lexer = newLexer(input, "test", nil)
+	if err := lexer.ingest(); err != nil {
+		t.Fatalf("failed to ingest")
+	}
+	output = string(lexer.takeToTabOrNextLineOrComment())
+	if output != expected {
+		t.Fatalf("comment fail - expected '%s' got '%s'", expected, output)
+	}
+
+	input = strings.NewReader(string("input test  "))
+	lexer = newLexer(input, "test", nil)
+	if err := lexer.ingest(); err != nil {
+		t.Fatalf("failed to ingest")
+	}
+	output = string(lexer.takeToTabOrNextLineOrComment())
+	if output != expected {
+		t.Fatalf("spaces fail - expected '%s' got '%s'", expected, output)
+	}
+
+	input = strings.NewReader(string("input test "))
+	lexer = newLexer(input, "test", nil)
+	if err := lexer.ingest(); err != nil {
+		t.Fatalf("failed to ingest")
+	}
+	output = string(lexer.takeToTabOrNextLineOrComment())
+	if output != expected {
+		t.Fatalf("single space fail - expected '%s' got '%s'", expected, output)
+	}
+
+	input = strings.NewReader(string("input test\thello"))
+	lexer = newLexer(input, "test", nil)
+	if err := lexer.ingest(); err != nil {
+		t.Fatalf("failed to ingest")
+	}
+	output = string(lexer.takeToTabOrNextLineOrComment())
+	if output != expected {
+		t.Fatalf("tab fail - expected '%s' got '%s'", expected, output)
+	}
+}
+
 // TestLex checks lexing a reader works
 // (this is how the lexer will be used in production)
 func TestLex(t *testing.T) {
 	parser := mockParser{}
 	lexer := newLexer(strings.NewReader(string(transactionHeader)), "th", parser.parseItem)
 	err := lexer.lex()
-
 	if err != nil {
 		t.Fatalf("lex returned unexpected err")
 	}
@@ -56,7 +110,6 @@ func TestLexTransactionHeader(t *testing.T) {
 	lexer.input = transactionHeader
 
 	err := lexer.lexTransactionHeader()
-
 	if err != nil {
 		t.Fatalf("lex returned unexpected err")
 	}
@@ -75,5 +128,4 @@ func TestLexTransactionHeader(t *testing.T) {
 }
 
 func TestLexTransactionHeaderWithComment(t *testing.T) {
-
 }

@@ -3,7 +3,6 @@ package parser
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/rikchilvers/gledger/journal"
 )
@@ -86,8 +85,7 @@ func (tb *transactionBuilder) buildNormalTransaction(t *journal.Transaction, ite
 			return fmt.Errorf("expected payee but got %s", item)
 		}
 
-		// TODO: try to remove necessity of TrimSpace everywhere
-		t.Payee = strings.TrimSpace(string(content))
+		t.Payee = string(content)
 	case accountItem:
 		if tb.previousItemType != payeeItem &&
 			tb.previousItemType != amountItem &&

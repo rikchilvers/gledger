@@ -61,6 +61,19 @@ func newLexer(reader io.Reader, locationHint string, parser itemParser) lexer {
 	}
 }
 
+// only used during testing
+func (l *lexer) ingest() error {
+	line, isPrefix, err := l.reader.ReadLine()
+	if err != nil {
+		return err
+	}
+	if isPrefix {
+		log.Fatalln("Unhandled split line (todo)")
+	}
+	l.input = line
+	return nil
+}
+
 // Lexes the file line by line
 func (l *lexer) lex() error {
 	l.currentLine = 1
@@ -130,7 +143,6 @@ func (l *lexer) lexLine() error {
 	}
 
 	// Detect transaction headers
-	// TODO: handle passing different transaction header indicators
 	if unicode.IsNumber(firstRune) {
 		// Need to backup to include the first rune
 		l.backup()
@@ -154,7 +166,7 @@ func (l *lexer) lexIncludeDirective() error {
 		return errors.New("could not lex include directive")
 	}
 
-	fileToInclude := l.takeToNextLineOrComment()
+	fileToInclude := l.takeToTabOrNextLineOrComment()
 
 	if len(fileToInclude) == 0 {
 		return errors.New("could not lex include directive")
@@ -174,7 +186,7 @@ func (l *lexer) lexPeriodTransactionHeader() error {
 		return errors.New("not enough spaces following ~")
 	}
 
-	period := l.takeToNextLineOrComment()
+	period := l.takeToTabOrNextLineOrComment()
 	return l.parser(periodItem, period)
 }
 
@@ -201,7 +213,7 @@ func (l *lexer) lexTransactionHeader() error {
 		return err
 	}
 
-	payee := l.takeToNextLineOrComment()
+	payee := l.takeToTabOrNextLineOrComment()
 	if err = l.parser(payeeItem, payee); err != nil {
 		return err
 	}
@@ -248,7 +260,7 @@ func (l *lexer) lexPosting() error {
 		}
 
 		// Lex the amount
-		amount := l.takeToNextLineOrComment()
+		amount := l.takeToTabOrNextLineOrComment()
 		if err = l.parser(amountItem, amount); err != nil {
 			return err
 		}
@@ -354,17 +366,33 @@ func (l *lexer) takeToNextLine() []rune {
 	}
 }
 
-func (l *lexer) takeToNextLineOrComment() []rune {
+func (l *lexer) takeToTabOrNextLineOrComment() []rune {
 	runes := make([]rune, 0, runeBufferCapacity)
+	trimSpace := func(runes []rune) []rune {
+		if runes[len(runes)-1] == ' ' {
+			return runes[:len(runes)-1]
+		} else {
+			return runes
+		}
+	}
 	for {
 		r := l.next()
 		if r == eof {
-			return runes
+			return trimSpace(runes)
 		}
 
 		if isCommentIndicator(r) {
+			return trimSpace(runes)
+		}
+
+		if r == '\t' {
+			return trimSpace(runes)
+		}
+
+		if r == ' ' && l.peek() == ' ' {
 			return runes
 		}
+
 		runes = append(runes, r)
 	}
 }
