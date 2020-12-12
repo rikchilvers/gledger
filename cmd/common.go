@@ -32,7 +32,7 @@ func parse(th parser.TransactionHandler, ph parser.PeriodicTransactionHandler) e
 }
 
 // report prints the given account and it's descendents
-func report(account journal.Account, flattenTree bool) {
+func report(account journal.Account, flattenTree, shouldCollapseOnlyChildren bool) {
 	prepender := func(a journal.Account) string {
 		return fmt.Sprintf("%20s  ", a.Amount.DisplayableQuantity(true))
 	}
@@ -41,7 +41,7 @@ func report(account journal.Account, flattenTree bool) {
 		flattened := reporting.FlattenedTree(account, prepender)
 		fmt.Println(flattened)
 	} else {
-		tree := reporting.Tree(account, prepender)
+		tree := reporting.Tree(account, prepender, shouldCollapseOnlyChildren)
 		fmt.Println(tree)
 	}
 

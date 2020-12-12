@@ -22,12 +22,13 @@ var budgetCmd = &cobra.Command{
 			return
 		}
 		journal.Prepare(showZero)
-		report(*journal.BudgetRoot, flattenTree)
+		report(*journal.BudgetRoot, flattenTree, collapseOnlyChildren)
 	},
 }
 
 func init() {
-	budgetCmd.Flags().BoolVarP(&flattenTree, "flat", "l", false, "show accounts as a flat list")
-	budgetCmd.Flags().BoolVarP(&showZero, "empty", "E", false, "show accounts with zero amount")
+	budgetCmd.Flags().BoolVarP(&flattenTree, "flatten", "F", false, "show accounts as a flat list")
+	budgetCmd.Flags().BoolVarP(&showZero, "show-zero", "Z", false, "show accounts with zero amount")
+	budgetCmd.Flags().BoolVarP(&collapseOnlyChildren, "collapse", "C", false, "collapse single child accounts into a list")
 	rootCmd.AddCommand(budgetCmd)
 }

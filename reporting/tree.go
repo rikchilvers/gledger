@@ -16,19 +16,20 @@ type treeContext struct {
 	shouldCollapseOnlyChildren bool
 }
 
-func newTreeContext(p func(a journal.Account) string) treeContext {
+func newTreeContext(p func(a journal.Account) string, shouldCollapseOnlyChildren bool) treeContext {
 	return treeContext{
-		prepender: p,
+		prepender:                  p,
+		shouldCollapseOnlyChildren: shouldCollapseOnlyChildren,
 	}
 }
 
 // Tree walks the descendents of this Account
 // and returns a string of its structure in tree form
-func Tree(a journal.Account, prepender func(a journal.Account) string) string {
+func Tree(a journal.Account, prepender func(a journal.Account) string, shouldCollapseOnlyChildren bool) string {
 	if prepender == nil {
 		prepender = func(a journal.Account) string { return "" }
 	}
-	c := newTreeContext(prepender)
+	c := newTreeContext(prepender, shouldCollapseOnlyChildren)
 
 	for _, childName := range a.SortedChildNames() {
 		c = tree(*a.Children[childName], c)

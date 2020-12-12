@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"flag"
 	"fmt"
 
 	"github.com/rikchilvers/gledger/journal"
@@ -9,9 +8,10 @@ import (
 )
 
 var (
-	flattenTree bool
-	showZero    bool
-	showBudget  bool
+	flattenTree          bool
+	collapseOnlyChildren bool
+	showZero             bool
+	showBudget           bool
 )
 
 var balanceCmd = &cobra.Command{
@@ -29,24 +29,19 @@ var balanceCmd = &cobra.Command{
 			return
 		}
 		journal.Prepare(showZero)
-		report(*journal.Root, flattenTree)
+		report(*journal.Root, flattenTree, collapseOnlyChildren)
 
 		if showBudget {
 			fmt.Println("")
-			report(*journal.BudgetRoot, flattenTree)
+			report(*journal.BudgetRoot, flattenTree, collapseOnlyChildren)
 		}
 	},
 }
 
 func init() {
-	if balanceCmd.Flags().Lookup("flattenTree") != nil {
-		fmt.Println("flag is already registered")
-	}
-	if flag.Lookup("flattenTree") != nil {
-		fmt.Println("flag is already registered")
-	}
-	balanceCmd.Flags().BoolVarP(&flattenTree, "flat", "l", false, "show accounts as a flat list")
-	balanceCmd.Flags().BoolVarP(&showZero, "empty", "E", false, "show accounts with zero amount")
-	balanceCmd.Flags().BoolVarP(&showBudget, "budget", "B", false, "show budget account balances")
+	balanceCmd.Flags().BoolVarP(&flattenTree, "flatten", "F", false, "show accounts as a flat list")
+	balanceCmd.Flags().BoolVarP(&showZero, "show-zero", "Z", false, "show accounts with zero amount")
+	balanceCmd.Flags().BoolVarP(&showBudget, "show-budget", "B", false, "show budget account balances")
+	balanceCmd.Flags().BoolVarP(&collapseOnlyChildren, "collapse", "C", false, "collapse single child accounts into a list")
 	rootCmd.AddCommand(balanceCmd)
 }
