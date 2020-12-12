@@ -222,23 +222,21 @@ func (l *lexer) lexTransactionHeader() error {
 }
 
 func (l *lexer) lexPosting() error {
-	var err error
 	l.consumeSpace()
 
 	firstRune := l.next()
 
 	// TODO: handle comments in postings
 	if isCommentIndicator(firstRune) {
-		// comment := l.takeToNextLine()
-		// l.parser.parseItem(commentItem, comment)
-		return nil
+		comment := l.takeToNextLine()
+		return l.parser(commentItem, comment)
 	}
 
 	if unicode.IsLetter(firstRune) {
 		// We need to backup otherwise we'll miss the first rune of the account
 		l.backup()
 		account := l.takeUntilMoreThanOneSpace()
-		if err = l.parser(accountItem, account); err != nil {
+		if err := l.parser(accountItem, account); err != nil {
 			return err
 		}
 
@@ -255,13 +253,13 @@ func (l *lexer) lexPosting() error {
 		if l.consumeSpace() > 0 {
 			commodity = append(commodity, ' ')
 		}
-		if err = l.parser(commodityItem, commodity); err != nil {
+		if err := l.parser(commodityItem, commodity); err != nil {
 			return err
 		}
 
 		// Lex the amount
 		amount := l.takeToTabOrNextLineOrComment()
-		if err = l.parser(amountItem, amount); err != nil {
+		if err := l.parser(amountItem, amount); err != nil {
 			return err
 		}
 
