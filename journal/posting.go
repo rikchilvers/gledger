@@ -22,6 +22,10 @@ func NewPosting() *Posting {
 	}
 }
 
-func (p Posting) String() string {
+func (p *Posting) String() string {
 	return fmt.Sprintf("%s  %s", p.Account.Name, p.Amount.DisplayableQuantity(true))
+}
+
+func (p *Posting) AddComment(c string) {
+	p.Comments = append(p.Comments, c)
 }

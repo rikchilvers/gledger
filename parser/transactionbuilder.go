@@ -40,7 +40,11 @@ func (tb *transactionBuilder) beginTransaction(t transactionType) {
 	case periodicTransaction:
 		transaction := journal.NewPeriodicTransaction()
 		tb.periodicTransaction = &transaction
+		// tb.transaction = &transaction.Transaction
 	}
+
+	tb.currentPosting = journal.NewPosting()
+	tb.currentPosting.Transaction = tb.transaction
 }
 
 func (tb *transactionBuilder) build(t itemType, content []rune) error {
@@ -61,6 +65,8 @@ func (tb *transactionBuilder) build(t itemType, content []rune) error {
 
 func (tb *transactionBuilder) buildNormalTransaction(t *journal.Transaction, item itemType, content []rune) error {
 	switch item {
+	case commentItem:
+		tb.currentPosting.AddComment(string(content))
 	case dateItem:
 		date, err := parseDate(content)
 		if err != nil {
@@ -87,7 +93,8 @@ func (tb *transactionBuilder) buildNormalTransaction(t *journal.Transaction, ite
 
 		t.Payee = string(content)
 	case accountItem:
-		if tb.previousItemType != payeeItem &&
+		if tb.previousItemType != commentItem &&
+			tb.previousItemType != payeeItem &&
 			tb.previousItemType != amountItem &&
 			tb.previousItemType != accountItem &&
 			tb.previousItemType != periodItem {
@@ -95,11 +102,10 @@ func (tb *transactionBuilder) buildNormalTransaction(t *journal.Transaction, ite
 		}
 
 		// Accounts start a posting, so check if we need to start a new one
-		// (When a transaction is started, the current posting is set to nil)
-		if tb.currentPosting != nil {
+		if len(tb.currentPosting.AccountPath) != 0 {
 			t.AddPosting(tb.currentPosting)
+			tb.currentPosting = journal.NewPosting()
 		}
-		tb.currentPosting = journal.NewPosting()
 
 		tb.currentPosting.Transaction = t
 		tb.currentPosting.AccountPath = string(content)
@@ -142,7 +148,6 @@ func (tb *transactionBuilder) buildPeriodicTransaction(t *journal.PeriodicTransa
 		t.Period = period
 	default:
 		// In all other cases, we just want to build the normal transaction
-		// fmt.Println("deferring to buildNormalTransaction")
 		return tb.buildNormalTransaction(&t.Transaction, i, content)
 	}
 
@@ -200,6 +205,7 @@ func (tb *transactionBuilder) endNormalTransaction(t *journal.Transaction, p Par
 	}
 
 	// Before we close a budget transaction, we need to add the 'To Be Budgeted' account
+	// TODO get rid of this and use root budget account instead
 	if tb.transactionType == periodicTransaction && tb.periodicTransaction.Period.Interval == journal.PNone {
 		hasBudgetSource := false
 		for _, p := range t.Postings {
