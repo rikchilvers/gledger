@@ -23,7 +23,12 @@ func NewPosting() *Posting {
 }
 
 func (p *Posting) String() string {
-	return fmt.Sprintf("%s  %s", p.Account.Name, p.Amount.DisplayableQuantity(true))
+	rs := fmt.Sprintf("%s    %s", p.AccountPath, p.Amount.DisplayableQuantity(true))
+	for _, c := range p.Comments {
+		rs = fmt.Sprintf("%s\n      ; %s", rs, c)
+	}
+
+	return rs
 }
 
 func (p *Posting) AddComment(c string) {
