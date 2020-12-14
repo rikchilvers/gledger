@@ -218,6 +218,15 @@ func (l *lexer) lexTransactionHeader() error {
 		return err
 	}
 
+	comment := l.takeToNextLine()
+	if len(comment) > 0 {
+		c := trimSpaceStart(comment[1:])
+		fmt.Printf("have a comment: '%s'\n", string(c))
+		// if err = l.parser(commentItem, trimSpaceStart(comment[1:])); err != nil {
+		// 	return err
+		// }
+	}
+
 	return nil
 }
 
@@ -355,17 +364,10 @@ func countSpace(r rune) int {
 
 func (l *lexer) takeToNextLine() []rune {
 	runes := make([]rune, 0, runeBufferCapacity)
-	trimSpace := func(runes []rune) []rune {
-		if runes[0] == ' ' {
-			return runes[1:]
-		} else {
-			return runes
-		}
-	}
 	for {
 		r := l.next()
 		if r == eof {
-			return trimSpace(runes)
+			return trimSpaceStart(runes)
 		}
 		runes = append(runes, r)
 	}
@@ -478,4 +480,20 @@ func equal(a, b []rune) bool {
 		}
 	}
 	return true
+}
+
+func trimSpaceStart(runes []rune) []rune {
+	if len(runes) == 0 {
+		return runes
+	}
+
+	index := 0
+	for i, r := range runes {
+		if r != ' ' {
+			index = i
+			break
+		}
+	}
+
+	return runes[index:]
 }
