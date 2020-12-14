@@ -355,10 +355,17 @@ func countSpace(r rune) int {
 
 func (l *lexer) takeToNextLine() []rune {
 	runes := make([]rune, 0, runeBufferCapacity)
+	trimSpace := func(runes []rune) []rune {
+		if runes[0] == ' ' {
+			return runes[1:]
+		} else {
+			return runes
+		}
+	}
 	for {
 		r := l.next()
 		if r == eof {
-			return runes
+			return trimSpace(runes)
 		}
 		runes = append(runes, r)
 	}
