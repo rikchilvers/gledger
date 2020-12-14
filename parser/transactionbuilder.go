@@ -65,6 +65,8 @@ func (tb *transactionBuilder) build(t itemType, content []rune) error {
 
 func (tb *transactionBuilder) buildNormalTransaction(t *journal.Transaction, item itemType, content []rune) error {
 	switch item {
+	case transactionHeaderCommentItem:
+		tb.transaction.HeaderNote = string(content)
 	case commentItem:
 		// check if we've got a posting to attach the comment to
 		if len(tb.currentPosting.AccountPath) != 0 {
@@ -99,6 +101,7 @@ func (tb *transactionBuilder) buildNormalTransaction(t *journal.Transaction, ite
 		t.Payee = string(content)
 	case accountItem:
 		if tb.previousItemType != commentItem &&
+			tb.previousItemType != transactionHeaderCommentItem &&
 			tb.previousItemType != payeeItem &&
 			tb.previousItemType != amountItem &&
 			tb.previousItemType != accountItem &&

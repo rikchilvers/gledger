@@ -222,10 +222,9 @@ func (l *lexer) lexTransactionHeader() error {
 	comment := l.takeToNextLine()
 	if len(comment) > 0 {
 		c := trimSpaceStart(comment[1:])
-		fmt.Printf("have a comment: '%s'\n", string(c))
-		// if err = l.parser(commentItem, trimSpaceStart(comment[1:])); err != nil {
-		// 	return err
-		// }
+		if err = l.parser(transactionHeaderCommentItem, c); err != nil {
+			return err
+		}
 	}
 
 	return nil
