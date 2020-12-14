@@ -66,7 +66,12 @@ func (tb *transactionBuilder) build(t itemType, content []rune) error {
 func (tb *transactionBuilder) buildNormalTransaction(t *journal.Transaction, item itemType, content []rune) error {
 	switch item {
 	case commentItem:
-		tb.currentPosting.AddComment(string(content))
+		// check if we've got a posting to attach the comment to
+		if len(tb.currentPosting.AccountPath) != 0 {
+			tb.currentPosting.AddComment(string(content))
+		} else {
+			tb.transaction.AddNote(string(content))
+		}
 	case dateItem:
 		date, err := parseDate(content)
 		if err != nil {

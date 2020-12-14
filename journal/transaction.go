@@ -17,6 +17,17 @@ const (
 	ClearedState
 )
 
+func StateToString(state TransactionState) string {
+	switch state {
+	case UnclearedState:
+		return "!"
+	case ClearedState:
+		return "*"
+	default:
+		return " "
+	}
+}
+
 // Transaction holds details about an individual transaction
 type Transaction struct {
 	Date                    time.Time
@@ -24,6 +35,8 @@ type Transaction struct {
 	Payee                   string
 	Postings                []*Posting
 	postingWithElidedAmount *Posting
+	HeaderNote              string   // note in the header
+	Notes                   []string // notes under the header
 }
 
 // NewTransaction creates a transaction
@@ -31,22 +44,30 @@ func NewTransaction() Transaction {
 	return Transaction{
 		Date:                    time.Time{},
 		State:                   NoState,
-		Payee:                   "",
 		Postings:                make([]*Posting, 0, 8),
 		postingWithElidedAmount: nil,
+		Notes:                   make([]string, 0, 4),
 	}
 }
 
 func (t Transaction) String() string {
-	ts := fmt.Sprintf(`Transaction:
-	%s
-	%s
-	%s
-	%d postings (%v)`, t.Date, t.State.String(), t.Payee, len(t.Postings), t.postingWithElidedAmount != nil)
-	for _, p := range t.Postings {
-		ts = fmt.Sprintf("%s\n\t\t%s", ts, p)
+	const dashDateFormat string = "2006-01-02"
+	date := t.Date.Format(dashDateFormat)
+	rs := fmt.Sprintf("%s %s %s", date, StateToString(t.State), t.Payee)
+
+	if len(t.HeaderNote) > 0 {
+		rs = fmt.Sprintf("%s    ; %s", rs, t.HeaderNote)
 	}
-	return ts
+
+	for _, p := range t.Postings {
+		rs = fmt.Sprintf("%s\n    %s", rs, p)
+	}
+
+	return fmt.Sprintf("%s\n", rs)
+}
+
+func (t *Transaction) AddNote(note string) {
+	t.Notes = append(t.Notes, note)
 }
 
 // AddPosting adds a posting to the Transaction (ensuring there is only one with an elided amount)
