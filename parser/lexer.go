@@ -28,6 +28,7 @@ const (
 	commodityItem
 	amountItem
 	commentItem
+	transactionHeaderCommentItem
 	periodItem
 	eofItem
 )
