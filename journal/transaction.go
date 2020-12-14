@@ -59,6 +59,10 @@ func (t Transaction) String() string {
 		rs = fmt.Sprintf("%s    ; %s", rs, t.HeaderNote)
 	}
 
+	for _, n := range t.Notes {
+		rs = fmt.Sprintf("%s\n    ; %s", rs, n)
+	}
+
 	for _, p := range t.Postings {
 		rs = fmt.Sprintf("%s\n    %s", rs, p)
 	}
