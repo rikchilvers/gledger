@@ -1,7 +1,6 @@
 package journal
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -179,36 +178,6 @@ func TestAccountPrinting(t *testing.T) {
 	}
 }
 
-func TestTree(t *testing.T) {
-	p := "£123  "
-	expected := `£123  A0
-£123    A1a
-£123    A1b:A2:A3
-£123  E0
-£123    E1a:E2a
-£123      E3a
-£123      E3b
-£123    E1b:E2b
-£123  I0:I1`
-	prepender := func(a Account) string { return p }
-	root, _, _ := createRoot()
-	got := root.Tree(prepender)
-
-	if got != expected {
-		t.Fatalf("\nExpected:\n%s\nGot:\n%s", expected, got)
-	}
-}
-
-func TestFlattenedTree(t *testing.T) {
-	prepender := func(a Account) string { return "" }
-	root, expected, _ := createRoot()
-	got := root.FlattenedTree(prepender)
-
-	if got != expected {
-		t.Fatalf("\nExpected:\n'%s'\nGot:\n'%s'", expected, got)
-	}
-}
-
 func TestMatcher(t *testing.T) {
 	root, _, _ := createRoot()
 	leaves := root.Leaves()
@@ -250,7 +219,6 @@ func TestPruning(t *testing.T) {
 	got = len(root.Children)
 	// Check A1 and A2
 	if got != expected {
-		fmt.Println(root.Tree(nil))
 		t.Fatalf("pruning failed: expected %d, got %d", expected, got)
 	}
 
