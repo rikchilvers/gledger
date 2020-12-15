@@ -41,7 +41,7 @@ func parseSmartDate(date string) (time.Time, error) {
 		}
 		return parseMonthDay(date, separator)
 	case 3: // year/month/day
-		return parseYearMonthDay(components)
+		return parseYearMonthDay(date, separator)
 	default:
 		return time.Time{}, errors.New("unhandled number of smart date components")
 	}
@@ -109,8 +109,23 @@ func parseMonthDay(date string, separator rune) (time.Time, error) {
 }
 
 // parseYearMonthDay expects dates in the format 2020/06/22
-func parseYearMonthDay(date []string) (time.Time, error) {
-	fmt.Println("year/month/day")
+func parseYearMonthDay(date string, separator rune) (time.Time, error) {
+	var format string
+	switch separator {
+	case '/':
+		format = "2006/01/02"
+	case '.':
+		format = "2006.01.02"
+	case '-':
+		format = "2006-01-02"
+	default:
+		return time.Time{}, errors.New("unhandled date format")
+	}
 
-	return time.Time{}, nil
+	parsed, err := time.ParseInLocation(format, date, time.Local)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return parsed, nil
 }
