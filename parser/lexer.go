@@ -376,7 +376,9 @@ func (l *lexer) takeToNextLine() []rune {
 func (l *lexer) takeToTabOrNextLineOrComment() []rune {
 	runes := make([]rune, 0, runeBufferCapacity)
 	trimSpace := func(runes []rune) []rune {
-		if runes[len(runes)-1] == ' ' {
+		if len(runes) == 0 {
+			return runes
+		} else if runes[len(runes)-1] == ' ' {
 			return runes[:len(runes)-1]
 		} else {
 			return runes
