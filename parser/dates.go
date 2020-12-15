@@ -16,16 +16,30 @@ func parseSmartDate(date string) (time.Time, error) {
 	08 - 06/01/02
 	*/
 
-	components := strings.Split(date, "/")
+	var components []string
+	var separator rune
+
+	if strings.IndexRune(date, '/') > 0 {
+		components = strings.Split(date, "/")
+		separator = '/'
+	} else if strings.IndexRune(date, '.') > 0 {
+		components = strings.Split(date, ".")
+		separator = '.'
+	} else if strings.IndexRune(date, '-') > 0 {
+		components = strings.Split(date, "-")
+		separator = '-'
+	} else {
+		components = append(components, date)
+	}
 
 	switch len(components) {
 	case 1: // year
-		return parseYear(components[0])
+		return parseYear(date)
 	case 2: // year/month or month/day
 		if len(components[0]) == 4 {
-			return parseYearMonth(components)
+			return parseYearMonth(date, separator)
 		}
-		return parseMonthDay(components)
+		return parseMonthDay(date, separator)
 	case 3: // year/month/day
 		return parseYearMonthDay(components)
 	default:
@@ -46,25 +60,55 @@ func parseYear(date string) (time.Time, error) {
 	return time.Date(year, time.January, 1, 0, 0, 0, 0, time.Local), nil
 }
 
-func parseYearMonth(date []string) (time.Time, error) {
-	fmt.Println("year/month")
-
-	year := date[0]
-	month := date[1]
-
-	switch len(year) + len(month) {
-	case 2: // 6/1
+// parseYearMonth expects dates in the format 2020/06
+func parseYearMonth(date string, separator rune) (time.Time, error) {
+	var format string
+	switch separator {
+	case '/':
+		format = "2006/01"
+	case '.':
+		format = "2006.01"
+	case '-':
+		format = "2006-01"
+	default:
+		return time.Time{}, errors.New("unhandled date format")
 	}
 
-	return time.Time{}, nil
+	parsed, err := time.ParseInLocation(format, date, time.Local)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return parsed, nil
 }
 
-func parseMonthDay(date []string) (time.Time, error) {
-	fmt.Println("month/day")
+// parseMonthDaty expected dates in the format 06/22
+func parseMonthDay(date string, separator rune) (time.Time, error) {
+	year := time.Now().Year()
+	var format, dateWithYear string
+	switch separator {
+	case '/':
+		format = "2006/01/02"
+		dateWithYear = fmt.Sprintf("%d/%s", year, date)
+	case '.':
+		format = "2006.01.02"
+		dateWithYear = fmt.Sprintf("%d.%s", year, date)
+	case '-':
+		format = "2006-01-02"
+		dateWithYear = fmt.Sprintf("%d-%s", year, date)
+	default:
+		return time.Time{}, errors.New("unhandled date format")
+	}
 
-	return time.Time{}, nil
+	parsed, err := time.ParseInLocation(format, dateWithYear, time.Local)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return parsed, nil
 }
 
+// parseYearMonthDay expects dates in the format 2020/06/22
 func parseYearMonthDay(date []string) (time.Time, error) {
 	fmt.Println("year/month/day")
 

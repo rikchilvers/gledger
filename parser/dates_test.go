@@ -24,3 +24,79 @@ func TestParseYearIncorrectLength(t *testing.T) {
 		t.Fatalf("should have errored for year input '%s'", input)
 	}
 }
+
+func TestParseYearMonth(t *testing.T) {
+	input := "2020/06"
+	expected := time.Date(2020, time.June, 1, 0, 0, 0, 0, time.Local)
+	got, err := parseSmartDate(input)
+	if err != nil {
+		t.Fatalf("failed to parse year/month:\nerr: %s", err)
+	}
+	if got != expected {
+		t.Fatalf("failed to parse year/month\nexpected\t'%s'\ngot\t\t'%s'", expected, got)
+	}
+
+	input = "2020-06"
+	expected = time.Date(2020, time.June, 1, 0, 0, 0, 0, time.Local)
+	got, err = parseSmartDate(input)
+	if err != nil {
+		t.Fatalf("failed to parse year/month:\nerr: %s", err)
+	}
+	if got != expected {
+		t.Fatalf("failed to parse year/month\nexpected\t'%s'\ngot\t\t'%s'", expected, got)
+	}
+}
+
+func TestParseYearMonthIncorrectLength(t *testing.T) {
+	input := "20/06"
+	_, err := parseSmartDate(input)
+	if err == nil {
+		t.Fatalf("should have errored for year/month input '%s'", input)
+	}
+}
+
+func TestParseYearMonthIncorrectFormat(t *testing.T) {
+	input := "2020/42"
+	_, err := parseSmartDate(input)
+	if err == nil {
+		t.Fatalf("should have errored for year/month input '%s'", input)
+	}
+}
+
+func TestParseMonthDay(t *testing.T) {
+	input := "06/22"
+	expected := time.Date(2020, time.June, 22, 0, 0, 0, 0, time.Local)
+	got, err := parseSmartDate(input)
+	if err != nil {
+		t.Fatalf("failed to parse year/month:\nerr: %s", err)
+	}
+	if got != expected {
+		t.Fatalf("failed to parse year/month\nexpected\t'%s'\ngot\t\t'%s'", expected, got)
+	}
+
+	input = "06.22"
+	expected = time.Date(2020, time.June, 22, 0, 0, 0, 0, time.Local)
+	got, err = parseSmartDate(input)
+	if err != nil {
+		t.Fatalf("failed to parse year/month:\nerr: %s", err)
+	}
+	if got != expected {
+		t.Fatalf("failed to parse year/month\nexpected\t'%s'\ngot\t\t'%s'", expected, got)
+	}
+}
+
+func TestParseMonthDayIncorrectLength(t *testing.T) {
+	input := "20/06"
+	_, err := parseSmartDate(input)
+	if err == nil {
+		t.Fatalf("should have errored for year/month input '%s'", input)
+	}
+}
+
+func TestParseMonthDayIncorrectForamt(t *testing.T) {
+	input := "13/06"
+	_, err := parseSmartDate(input)
+	if err == nil {
+		t.Fatalf("should have errored for year/month input '%s'", input)
+	}
+}
