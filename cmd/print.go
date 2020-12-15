@@ -3,10 +3,8 @@ package cmd
 import (
 	"fmt"
 	"sort"
-	"time"
 
 	"github.com/rikchilvers/gledger/journal"
-	"github.com/rikchilvers/gledger/parser"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +19,8 @@ var printCmd = &cobra.Command{
 	SilenceUsage: true,
 	Run: func(_ *cobra.Command, _ []string) {
 		pj := newPrintJournal()
-		if err := parse(pj.transactionHandler, nil); err != nil {
+		th := dateCheckedTransactionHandler(pj.transactionHandler)
+		if err := parse(th, nil); err != nil {
 			fmt.Println(err)
 			return
 		}
@@ -41,28 +40,7 @@ func newPrintJournal() printJournal {
 }
 
 func (pj *printJournal) transactionHandler(t *journal.Transaction, _ string) error {
-	var err error
-	var start, end time.Time
-
-	if len(beginDate) > 0 {
-		start, err = parser.ParseSmartDate(beginDate)
-		if err != nil {
-			return err
-		}
-	}
-
-	if len(endDate) > 0 {
-		end, err = parser.ParseSmartDate(endDate)
-		if err != nil {
-			return err
-		}
-	}
-
-	if (t.Date.Equal(start) || t.Date.After(start)) &&
-		(end.IsZero() || t.Date.Before(end)) {
-		pj.transactions = append(pj.transactions, t)
-	}
-
+	pj.transactions = append(pj.transactions, t)
 	return nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/rikchilvers/gledger/journal"
 	"github.com/rikchilvers/gledger/parser"
@@ -78,4 +79,43 @@ func linkTransaction(root *journal.Account, transaction *journal.Transaction, _ 
 	}
 
 	return nil
+}
+
+// dateCheckedTransactionHandler wraps a transaction handler in --begin / --end checks
+func dateCheckedTransactionHandler(handler func(t *journal.Transaction, path string) error) func(t *journal.Transaction, path string) error {
+	return func(t *journal.Transaction, path string) error {
+		withinRange, err := withinDateRange(t)
+		if err != nil {
+			return err
+		}
+
+		if withinRange {
+			return handler(t, path)
+		}
+
+		return nil
+	}
+}
+
+func withinDateRange(t *journal.Transaction) (bool, error) {
+	var err error
+	var start, end time.Time
+
+	if len(beginDate) > 0 {
+		start, err = parser.ParseSmartDate(beginDate)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	if len(endDate) > 0 {
+		end, err = parser.ParseSmartDate(endDate)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	withinRange := (t.Date.Equal(start) || t.Date.After(start)) && (end.IsZero() || t.Date.Before(end))
+
+	return withinRange, nil
 }
