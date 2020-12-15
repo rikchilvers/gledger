@@ -3,8 +3,10 @@ package cmd
 import (
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/rikchilvers/gledger/journal"
+	"github.com/rikchilvers/gledger/parser"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +41,27 @@ func newPrintJournal() printJournal {
 }
 
 func (pj *printJournal) transactionHandler(t *journal.Transaction, _ string) error {
-	pj.transactions = append(pj.transactions, t)
+	var err error
+	var start, end time.Time
+
+	if len(beginDate) > 0 {
+		start, err = parser.ParseSmartDate(beginDate)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(endDate) > 0 {
+		end, err = parser.ParseSmartDate(endDate)
+		if err != nil {
+			return err
+		}
+	}
+
+	if (t.Date.Equal(start) || t.Date.After(start)) &&
+		(end.IsZero() || t.Date.Before(end)) {
+		pj.transactions = append(pj.transactions, t)
+	}
 
 	return nil
 }
