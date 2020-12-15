@@ -4,24 +4,30 @@
   Assets:Current  £1000
   Income:Work
 
-2020-07-02 * Cash
-  Assets:Current
-  Assets:Cash   £40
-
 ; This is a comment
 ; This is another comment
 2020-08-10 * Grocery store  ; Weekly shop
-    Assets:Cash  £-40
+		; transaction note
+		; more notes for the transaction
+		Assets:Cash  £-40
+			; posting note
+		; another posting note
     Expenses:Immediate Obligations:Groceries    £40
 
 
 2020-10-11 A restaurant
-    ; a comment in the restaurant posting
+      			; a comment in the restaurant posting
     Assets:Current 
     Expenses:Life:Dining    £30
 
 2020-10-11 ! Clothes store  ; new shoes
     Assets:Current
     Expenses:Life:Clothing    £20.00
+
+; note that this is out of order
+2020-07-02 * Cash
+  Assets:Current
+  Assets:Cash   £40
+
 
 include included.journal
