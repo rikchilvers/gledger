@@ -19,7 +19,7 @@ var statsCmd = &cobra.Command{
 	Aliases:      []string{"stats", "s"},
 	Short:        "Shows statistics about the journal",
 	SilenceUsage: true,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		js := newJournalStatistics()
 		if err := parse(js.transactionHandler, nil); err != nil {
 			fmt.Println(err)
