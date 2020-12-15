@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func parseSmartDate(date string) (time.Time, error) {
+func ParseSmartDate(date string) (time.Time, error) {
 	/* Mon Jan 2 15:04:05 MST 2006
 	04 - 2006
 	07 - 2006/01
