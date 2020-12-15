@@ -17,9 +17,9 @@ var printCmd = &cobra.Command{
 	Aliases:      []string{"p"},
 	Short:        "Shows transaction entries, sorted by date",
 	SilenceUsage: true,
-	Run: func(_ *cobra.Command, _ []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		pj := newPrintJournal()
-		th := dateCheckedTransactionHandler(pj.transactionHandler)
+		th := dateCheckedFilteringTransactionHandler(args, pj.transactionHandler)
 		if err := parse(th, nil); err != nil {
 			fmt.Println(err)
 			return

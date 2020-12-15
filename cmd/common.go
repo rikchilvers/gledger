@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/rikchilvers/gledger/journal"
 	"github.com/rikchilvers/gledger/parser"
@@ -97,6 +99,30 @@ func dateCheckedTransactionHandler(handler func(t *journal.Transaction, path str
 	}
 }
 
+func dateCheckedFilteringTransactionHandler(args []string, handler func(t *journal.Transaction, path string) error) func(t *journal.Transaction, path string) error {
+	return func(t *journal.Transaction, path string) error {
+		withinRange, err := withinDateRange(t)
+		if err != nil {
+			return err
+		}
+
+		if !withinRange {
+			return nil
+		}
+
+		matches, err := matchesRegex(t, args)
+		if err != nil {
+			return nil
+		}
+
+		if !matches {
+			return nil
+		}
+
+		return handler(t, path)
+	}
+}
+
 func withinDateRange(t *journal.Transaction) (bool, error) {
 	var err error
 	var start, end time.Time
@@ -118,4 +144,34 @@ func withinDateRange(t *journal.Transaction) (bool, error) {
 	withinRange := (t.Date.Equal(start) || t.Date.After(start)) && (end.IsZero() || t.Date.Before(end))
 
 	return withinRange, nil
+}
+
+func matchesRegex(t *journal.Transaction, args []string) (bool, error) {
+	if len(args) == 0 {
+		return true, nil
+	}
+
+	for _, arg := range args {
+		if !containsUppercase(arg) {
+			arg = "(?i)" + arg
+		}
+		regex, err := regexp.Compile(arg)
+		if err != nil {
+			return false, err
+		}
+		if regex.MatchString(t.String()) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func containsUppercase(s string) bool {
+	for _, c := range s {
+		if unicode.IsUpper(c) {
+			return true
+		}
+	}
+	return false
 }
