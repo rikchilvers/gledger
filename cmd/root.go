@@ -35,7 +35,7 @@ func newFilteringContext(checkPayees, checkAccounts, checkNotes bool) filteringC
 var rootCmd = &cobra.Command{
 	Use:   "gledger",
 	Short: "gledger - command line budgeting",
-	Long:  "gledger is a reimplementation of Ledger in Go\nwith YNAB-style budgeting at its core",
+	Long:  "gledger is a reimplementation of Ledger\nwith YNAB-style budgeting at its core",
 	Run: func(cmd *cobra.Command, _ []string) {
 		cmd.Help()
 	},
