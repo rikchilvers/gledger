@@ -155,6 +155,7 @@ func (a *Account) PruneChildren(targetDepth, currentDepth int) {
 	}
 }
 
+// Leaves finds all accounts with no children
 func (a *Account) Leaves() []*Account {
 	matcher := func(a Account) bool {
 		return len(a.Children) == 0

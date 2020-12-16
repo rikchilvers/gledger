@@ -32,19 +32,21 @@ func (a Amount) DisplayableQuantity(withCommodity bool) string {
 	return amount
 }
 
+// Add adds an amount to this one
 func (a *Amount) Add(other *Amount) error {
 	if a.Commodity != other.Commodity {
 		// return errors.New("unhandled addition of unmatched commodities")
-		// fmt.Println("unhandled addition of unmatched commodities")
+		fmt.Println("unhandled addition of unmatched commodities")
 	}
 	a.Quantity += other.Quantity
 	return nil
 }
 
+// Subtract subtracts an amount from this one
 func (a *Amount) Subtract(other *Amount) error {
 	if a.Commodity != other.Commodity {
 		// return errors.New("unhandled addition of unmatched commodities")
-		// fmt.Println("unhandled addition of unmatched commodities")
+		fmt.Println("unhandled addition of unmatched commodities")
 	}
 	a.Quantity -= other.Quantity
 	return nil

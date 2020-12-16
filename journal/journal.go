@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// Identifiers for accounts
 const (
 	RootID         string = "_root_"
 	BudgetRootID   string = "_budget_root_"
@@ -14,8 +15,9 @@ const (
 	IncomeID   string = "Income"
 )
 
+// Journal holds information about the transactions parsed
 type Journal struct {
-	config               JournalConfig
+	config               ProcessingConfig
 	transactions         []*Transaction
 	periodicTransactions []*PeriodicTransaction
 	filePaths            []string // the
@@ -23,11 +25,13 @@ type Journal struct {
 	BudgetRoot           *Account
 }
 
-type JournalConfig struct {
+// ProcessingConfig contains flags used when parsing transactions
+type ProcessingConfig struct {
 	CalculateBudget bool
 }
 
-func NewJournal(config JournalConfig) Journal {
+// NewJournal creates a Journal
+func NewJournal(config ProcessingConfig) Journal {
 	j := Journal{
 		config:               config,
 		transactions:         make([]*Transaction, 0, 256),
@@ -46,11 +50,13 @@ func NewJournal(config JournalConfig) Journal {
 	return j
 }
 
+// AddTransaction adds a transaction to the journal
 func (j *Journal) AddTransaction(t *Transaction, locationHint string) error {
 	// TODO: make filePaths an indexed map
 	return j.linkTransaction(t)
 }
 
+// AddPeriodicTransaction adds a periodic transaction to the journal
 func (j *Journal) AddPeriodicTransaction(pt *PeriodicTransaction, locationHint string) error {
 	// Add the periodic transaction to the journal
 	j.periodicTransactions = append(j.periodicTransactions, pt)
@@ -186,6 +192,7 @@ func (j *Journal) handleExpensesPosting(posting *Posting) error {
 	return nil
 }
 
+// Prepare prepares the Journal for reporting
 func (j *Journal) Prepare(showZero bool) {
 	if !showZero {
 		j.Root.removeEmptyChildren()

@@ -10,6 +10,7 @@ import (
 //go:generate stringer -type=PeriodType
 type PeriodType int
 
+// PeriodType describes the interval of a transaction period
 const (
 	PNone PeriodType = iota
 	PDaily
@@ -22,6 +23,7 @@ const (
 	PBiMonthly
 )
 
+// Period describes the duration, interval and frequency of a transaction
 type Period struct {
 	StartDate         time.Time
 	EndDate           time.Time
@@ -36,6 +38,7 @@ type PeriodicTransaction struct {
 	Transaction Transaction
 }
 
+// NewPeriodicTransaction creates a new PeriodicTransaction
 func NewPeriodicTransaction() PeriodicTransaction {
 	return PeriodicTransaction{}
 }

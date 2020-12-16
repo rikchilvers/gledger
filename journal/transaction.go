@@ -17,6 +17,7 @@ const (
 	ClearedState
 )
 
+// StateToString converts a TransactionState to a reportable string
 func StateToString(state TransactionState) string {
 	switch state {
 	case UnclearedState:
@@ -70,6 +71,7 @@ func (t Transaction) String() string {
 	return fmt.Sprintf("%s\n", rs)
 }
 
+// AddNote adds a note to the transaction
 func (t *Transaction) AddNote(note string) {
 	t.Notes = append(t.Notes, note)
 }

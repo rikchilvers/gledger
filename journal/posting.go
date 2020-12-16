@@ -31,6 +31,7 @@ func (p *Posting) String() string {
 	return rs
 }
 
+// AddComment adds a comment to the posting
 func (p *Posting) AddComment(c string) {
 	p.Comments = append(p.Comments, c)
 }

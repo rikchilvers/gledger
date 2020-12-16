@@ -20,7 +20,7 @@ var balanceCmd = &cobra.Command{
 	Short:        "Shows accounts and their balances",
 	SilenceUsage: true,
 	Run: func(_ *cobra.Command, _ []string) {
-		config := journal.JournalConfig{
+		config := journal.ProcessingConfig{
 			CalculateBudget: showBudget,
 		}
 		journal := journal.NewJournal(config)
