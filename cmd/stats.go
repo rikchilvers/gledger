@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"math"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -26,6 +28,7 @@ var statsCmd = &cobra.Command{
 			fmt.Println(err)
 			return
 		}
+		js.prepare()
 		js.report()
 	},
 }
@@ -39,6 +42,9 @@ type journalStatistics struct {
 	uniqueAccounts       map[string]bool
 	uniquePayees         map[string]bool
 	journalFiles         map[string]bool
+	incomeBuckets        map[time.Time]int64
+	expenseBuckets       map[time.Time]int64
+	ageOfMoney           float64
 }
 
 func newJournalStatistics() journalStatistics {
@@ -49,6 +55,9 @@ func newJournalStatistics() journalStatistics {
 		uniqueAccounts:       make(map[string]bool),
 		uniquePayees:         make(map[string]bool),
 		journalFiles:         make(map[string]bool),
+		incomeBuckets:        make(map[time.Time]int64),
+		expenseBuckets:       make(map[time.Time]int64),
+		ageOfMoney:           0.0,
 	}
 }
 
@@ -78,10 +87,81 @@ func (js *journalStatistics) transactionHandler(t *journal.Transaction, path str
 	// Add the payee
 	js.uniquePayees[t.Payee] = true
 
+	// Add income and expenses for age of money calculation
+	for _, p := range t.Postings {
+		components := strings.Split(p.AccountPath, ":")
+
+		if components[0] == journal.IncomeID {
+			js.incomeBuckets[t.Date] -= p.Amount.Quantity
+		}
+
+		if components[0] == journal.ExpensesID {
+			js.expenseBuckets[t.Date] += p.Amount.Quantity
+		}
+	}
+
 	return nil
 }
 
-func (js journalStatistics) report() {
+func (js *journalStatistics) prepare() {
+	// Sort income
+	incomeKeys := make([]time.Time, 0, len(js.incomeBuckets))
+	for k := range js.incomeBuckets {
+		incomeKeys = append(incomeKeys, k)
+	}
+	sort.Slice(incomeKeys, func(i, j int) bool {
+		return incomeKeys[i].Before(incomeKeys[j])
+	})
+
+	// Sort expenses
+	expenseKeys := make([]time.Time, 0, len(js.expenseBuckets))
+	for k := range js.expenseBuckets {
+		expenseKeys = append(expenseKeys, k)
+	}
+	sort.Slice(expenseKeys, func(i, j int) bool {
+		return expenseKeys[i].Before(expenseKeys[j])
+	})
+
+	// Calculate age of money
+	ages := make([]time.Duration, 0)
+
+expenseLoop:
+	for _, ek := range expenseKeys {
+		expense := js.expenseBuckets[ek]
+
+		for _, ik := range incomeKeys {
+			income := js.incomeBuckets[ik]
+			if income == 0 {
+				continue
+			}
+
+			duration := ek.Sub(ik)
+			ages = append(ages, duration)
+
+			// Handle not having enough in the income bucket
+			if expense > income {
+				js.incomeBuckets[ik] = 0
+				expense -= income
+			} else {
+				js.incomeBuckets[ik] = income - expense
+				continue expenseLoop
+			}
+		}
+	}
+
+	rangeCap := 0
+	if len(ages) > 20 {
+		rangeCap = 11
+	}
+	var summedAges time.Duration = 0
+	for _, a := range ages[:len(ages)-rangeCap] { // we only care about the final 10
+		summedAges += a
+	}
+	summedAges = time.Duration(summedAges.Nanoseconds() / int64(len(ages)))
+	js.ageOfMoney = math.Max(summedAges.Hours()/24, 0)
+}
+
+func (js *journalStatistics) report() {
 	// Report the files
 	fmt.Printf("Transactions found in %d files:\n", len(js.journalFiles))
 	for p := range js.journalFiles {
@@ -106,4 +186,7 @@ func (js journalStatistics) report() {
 
 	// Report number of unique payees
 	fmt.Printf("Unique payees:\t\t%d\n", len(js.uniquePayees))
+
+	// Report age of money
+	fmt.Printf("Age of money:\t\t%.f days\n", js.ageOfMoney)
 }
