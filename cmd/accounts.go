@@ -15,7 +15,7 @@ func init() {
 
 var accountsCmd = &cobra.Command{
 	Use:          "accounts",
-	Aliases:      []string{"a"},
+	Aliases:      []string{"acc", "a"},
 	Short:        "List all accounts",
 	SilenceUsage: true,
 	Run: func(_ *cobra.Command, args []string) {
