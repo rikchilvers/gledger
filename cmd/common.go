@@ -16,9 +16,12 @@ import (
 )
 
 func parse(th parser.TransactionHandler, ph parser.PeriodicTransactionHandler) error {
-	if rootJournalPath == "" {
-		// TODO: use viper to read env variable
-		return errors.New("no root journal path provided")
+	if len(rootJournalPath) == 0 {
+		path, found := os.LookupEnv("LEDGER_FILE")
+		if !found {
+			return errors.New("no root journal path provided")
+		}
+		rootJournalPath = path
 	}
 
 	file, err := os.Open(rootJournalPath)
