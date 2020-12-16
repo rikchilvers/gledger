@@ -7,9 +7,14 @@ import (
 )
 
 var (
+	// flag to pass the journal file to read
 	rootJournalPath string
-	beginDate       string
-	endDate         string
+	// flag to include only transactions on or after this date
+	beginDate string
+	// flag to include only transactions before this date
+	endDate string
+	// flag to include only transactions on or before today
+	current bool
 )
 
 var rootCmd = &cobra.Command{
@@ -25,6 +30,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&rootJournalPath, "file", "f", "", "journal file to read (default $LEDGER_FILE)")
 	rootCmd.PersistentFlags().StringVarP(&beginDate, "begin", "b", "", "include only transactions on or after this date")
 	rootCmd.PersistentFlags().StringVarP(&endDate, "end", "e", "", "include only transactions before this date")
+	rootCmd.PersistentFlags().BoolVarP(&current, "current", "c", false, "include only transactions on or before today (overrides --begin and --end)")
 }
 
 // Execute runs gledger

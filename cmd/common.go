@@ -127,18 +127,23 @@ func withinDateRange(t *journal.Transaction) (bool, error) {
 	var err error
 	var start, end time.Time
 
-	if len(beginDate) > 0 {
+	if len(beginDate) > 0 && !current {
 		start, err = parser.ParseSmartDate(beginDate)
 		if err != nil {
 			return false, err
 		}
 	}
 
-	if len(endDate) > 0 {
+	if len(endDate) > 0 && !current {
 		end, err = parser.ParseSmartDate(endDate)
 		if err != nil {
 			return false, err
 		}
+	}
+
+	if current {
+		start = time.Time{}
+		end = time.Now().AddDate(0, 0, 1)
 	}
 
 	withinRange := (t.Date.Equal(start) || t.Date.After(start)) && (end.IsZero() || t.Date.Before(end))
