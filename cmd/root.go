@@ -14,8 +14,23 @@ var (
 	// flag to include only transactions before this date
 	endDate string
 	// flag to include only transactions on or before today
-	current bool
+	current       bool
+	filterContext filteringContext
 )
+
+type filteringContext struct {
+	checkPayees   bool
+	checkAccounts bool
+	checkNotes    bool
+}
+
+func newFilteringContext(checkPayees, checkAccounts, checkNotes bool) filteringContext {
+	return filteringContext{
+		checkPayees:   checkPayees,
+		checkAccounts: checkAccounts,
+		checkNotes:    checkNotes,
+	}
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "gledger",
@@ -31,6 +46,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&beginDate, "begin", "b", "", "include only transactions on or after this date")
 	rootCmd.PersistentFlags().StringVarP(&endDate, "end", "e", "", "include only transactions before this date")
 	rootCmd.PersistentFlags().BoolVarP(&current, "current", "c", false, "include only transactions on or before today (overrides --begin and --end)")
+
+	filterContext = newFilteringContext(true, true, true)
 }
 
 // Execute runs gledger

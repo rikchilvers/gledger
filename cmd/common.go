@@ -164,8 +164,42 @@ func matchesRegex(t *journal.Transaction, args []string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		if regex.MatchString(t.String()) {
-			return true, nil
+
+		// Check payees
+		if filterContext.checkPayees {
+			if regex.MatchString(t.Payee) {
+				return true, nil
+			}
+		}
+
+		// Check transaction notes
+		if filterContext.checkNotes {
+			if regex.MatchString(t.HeaderNote) {
+				return true, nil
+			}
+			for _, n := range t.Notes {
+				if regex.MatchString(n) {
+					return true, nil
+				}
+			}
+		}
+
+		// Check postings
+		for _, p := range t.Postings {
+			// Check accounts
+			if filterContext.checkAccounts {
+				if regex.MatchString(p.AccountPath) {
+					return true, nil
+				}
+			}
+			// Check postings comments
+			if filterContext.checkNotes {
+				for _, c := range p.Comments {
+					if regex.MatchString(c) {
+						return true, nil
+					}
+				}
+			}
 		}
 	}
 
