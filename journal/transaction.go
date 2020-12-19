@@ -114,7 +114,6 @@ func (t *Transaction) Close() error {
 		}
 
 		// NB: setting the commodity like this will not work with multiple currencies
-		// see above comment too
 		t.postingWithElidedAmount.Amount = NewAmount(c, -sum)
 	}
 
