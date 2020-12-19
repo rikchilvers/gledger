@@ -142,12 +142,17 @@ func wireUpPosting(root *Account, transaction *Transaction, p *Posting) error {
 	p.Account.Transactions = append(p.Account.Transactions, transaction)
 
 	// Add the posting's amount to the account and all of its ancestors
-	if err := p.Account.WalkAncestors(func(a *Account) error {
+	add := func(a *Account) error {
+		// NB: setting the commodity like this will not work with multiple currencies
+		if a.Amount.Commodity == "" {
+			a.Amount.Commodity = p.Amount.Commodity
+		}
 		if err := a.Amount.Add(p.Amount); err != nil {
 			return err
 		}
 		return nil
-	}); err != nil {
+	}
+	if err := p.Account.WalkAncestors(add); err != nil {
 		return err
 	}
 
