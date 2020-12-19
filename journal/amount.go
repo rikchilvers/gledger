@@ -36,7 +36,7 @@ func (a Amount) DisplayableQuantity(withCommodity bool) string {
 func (a *Amount) Add(other *Amount) error {
 	if a.Commodity != other.Commodity {
 		// return errors.New("unhandled addition of unmatched commodities")
-		fmt.Println("unhandled addition of unmatched commodities")
+		fmt.Printf("unhandled addition of unmatched commodities: '%s' and '%s'\n", a.Commodity, other.Commodity)
 	}
 	a.Quantity += other.Quantity
 	return nil
@@ -46,7 +46,7 @@ func (a *Amount) Add(other *Amount) error {
 func (a *Amount) Subtract(other *Amount) error {
 	if a.Commodity != other.Commodity {
 		// return errors.New("unhandled addition of unmatched commodities")
-		fmt.Println("unhandled addition of unmatched commodities")
+		fmt.Printf("unhandled subtraction of unmatched commodities: '%s' and '%s'\n", a.Commodity, other.Commodity)
 	}
 	a.Quantity -= other.Quantity
 	return nil
