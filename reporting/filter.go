@@ -35,8 +35,10 @@ func NewFilter(arg string) (Filter, error) {
 	switch []rune(arg)[0] {
 	case '@':
 		filter.filterType = payeeFilter
+		arg = arg[1:]
 	case '=':
 		filter.filterType = noteFilter
+		arg = arg[1:]
 	default:
 		filter.filterType = accountNameFilter
 	}
