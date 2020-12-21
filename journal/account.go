@@ -192,9 +192,7 @@ func (a *Account) RemoveEmptyChildren() {
 		if m.Name == RootID {
 			continue
 		}
-		// remove the account from it's parent
-		delete(m.Parent.Children, m.Name)
-		m.Parent = nil
+		m.Unlink()
 	}
 }
 
