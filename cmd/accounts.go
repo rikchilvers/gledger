@@ -2,11 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"regexp"
 	"sort"
 
 	"github.com/rikchilvers/gledger/journal"
-	"github.com/rikchilvers/gledger/reporting"
 	"github.com/spf13/cobra"
 )
 
@@ -19,14 +17,14 @@ var accountsCmd = &cobra.Command{
 	Aliases:      []string{"acc", "a"},
 	Short:        "List all accounts",
 	SilenceUsage: true,
-	Run: func(_ *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		aj := newAccountsJournal()
 		th := dateCheckedTransactionHandler(aj.transactionHandler)
 		if err := parse(th, nil); err != nil {
 			fmt.Println(err)
 			return
 		}
-		if err := aj.prepare(args); err != nil {
+		if err := aj.prepare(); err != nil {
 			fmt.Println(err)
 			return
 		}
@@ -52,34 +50,22 @@ func (aj *accountsJournal) transactionHandler(t *journal.Transaction, _ string) 
 	return nil
 }
 
-func (aj *accountsJournal) prepare(args []string) error {
+func (aj *accountsJournal) prepare() error {
 	aj.accounts = make([]string, 0, len(aj.uniqueAccounts))
 	for a := range aj.uniqueAccounts {
 		aj.accounts = append(aj.accounts, a)
 	}
 
-	if len(args) == 0 {
+	if len(filters) == 0 {
 		sort.Strings(aj.accounts)
 		return nil
 	}
 
 	filtered := make([]string, 0)
-	regexes := make([]*regexp.Regexp, 0, len(args))
-	for _, arg := range args {
-		if !reporting.ContainsUppercase(arg) {
-			arg = "(?i)" + arg
-		}
-		regex, err := regexp.Compile(arg)
-		if err != nil {
-			return err
-		}
-		regexes = append(regexes, regex)
-	}
-
 accountsLoop:
 	for _, a := range aj.accounts {
-		for _, r := range regexes {
-			if r.MatchString(a) {
+		for _, f := range filters {
+			if f.MatchesString(a) {
 				filtered = append(filtered, a)
 				continue accountsLoop
 			}
