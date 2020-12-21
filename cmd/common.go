@@ -5,10 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/rikchilvers/gledger/journal"
 	"github.com/rikchilvers/gledger/parser"
@@ -38,6 +36,7 @@ func parse(th parser.TransactionHandler, ph parser.PeriodicTransactionHandler) e
 }
 
 // report prints the given account and it's descendents
+// TODO: move this to reporting package
 func report(account journal.Account, flattenTree, shouldCollapseOnlyChildren bool) {
 	prepender := func(a journal.Account) string {
 		return fmt.Sprintf("%20s  ", a.Amount.DisplayableQuantity(true))
@@ -59,6 +58,7 @@ func report(account journal.Account, flattenTree, shouldCollapseOnlyChildren boo
 }
 
 // linkTransaction builds the account tree
+// TODO remove this
 func linkTransaction(root *journal.Account, transaction *journal.Transaction, _ string) error {
 	for _, p := range transaction.Postings {
 		// Use the parsed account path to find or create the account
@@ -113,7 +113,7 @@ func dateCheckedFilteringTransactionHandler(args []string, handler func(t *journ
 			return nil
 		}
 
-		matches, err := matchesRegex(t, args)
+		matches, err := reporting.MatchesRegex(t, args)
 		if err != nil {
 			return nil
 		}
@@ -152,68 +152,4 @@ func withinDateRange(t *journal.Transaction) (bool, error) {
 	withinRange := (t.Date.Equal(start) || t.Date.After(start)) && (end.IsZero() || t.Date.Before(end))
 
 	return withinRange, nil
-}
-
-func matchesRegex(t *journal.Transaction, args []string) (bool, error) {
-	if len(args) == 0 {
-		return true, nil
-	}
-
-	for _, arg := range args {
-		if !containsUppercase(arg) {
-			arg = "(?i)" + arg
-		}
-		regex, err := regexp.Compile(arg)
-		if err != nil {
-			return false, err
-		}
-
-		// Check payees
-		if filterContext.checkPayees {
-			if regex.MatchString(t.Payee) {
-				return true, nil
-			}
-		}
-
-		// Check transaction notes
-		if filterContext.checkNotes {
-			if regex.MatchString(t.HeaderNote) {
-				return true, nil
-			}
-			for _, n := range t.Notes {
-				if regex.MatchString(n) {
-					return true, nil
-				}
-			}
-		}
-
-		// Check postings
-		for _, p := range t.Postings {
-			// Check accounts
-			if filterContext.checkAccounts {
-				if regex.MatchString(p.AccountPath) {
-					return true, nil
-				}
-			}
-			// Check postings comments
-			if filterContext.checkNotes {
-				for _, c := range p.Comments {
-					if regex.MatchString(c) {
-						return true, nil
-					}
-				}
-			}
-		}
-	}
-
-	return false, nil
-}
-
-func containsUppercase(s string) bool {
-	for _, c := range s {
-		if unicode.IsUpper(c) {
-			return true
-		}
-	}
-	return false
 }

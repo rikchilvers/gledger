@@ -183,7 +183,7 @@ func (a *Account) findAccounts(matcher func(a Account) bool, found []*Account) [
 	return found
 }
 
-func (a *Account) removeEmptyChildren() {
+func (a *Account) RemoveEmptyChildren() {
 	matcher := func(a Account) bool {
 		return a.Amount.Quantity == 0
 	}
@@ -196,4 +196,12 @@ func (a *Account) removeEmptyChildren() {
 		delete(m.Parent.Children, m.Name)
 		m.Parent = nil
 	}
+}
+
+// Unlink removes this account from it's parents
+func (a *Account) Unlink() {
+	if a.Parent != nil {
+		delete(a.Parent.Children, a.Name)
+	}
+	a.Parent = nil
 }

@@ -196,14 +196,3 @@ func (j *Journal) handleExpensesPosting(posting *Posting) error {
 
 	return nil
 }
-
-// Prepare prepares the Journal for reporting
-func (j *Journal) Prepare(showZero bool) {
-	if !showZero {
-		j.Root.removeEmptyChildren()
-
-		if j.config.CalculateBudget {
-			j.BudgetRoot.removeEmptyChildren()
-		}
-	}
-}

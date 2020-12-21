@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/rikchilvers/gledger/journal"
+	"github.com/rikchilvers/gledger/reporting"
 	"github.com/spf13/cobra"
 )
 
@@ -65,7 +66,7 @@ func (aj *accountsJournal) prepare(args []string) error {
 	filtered := make([]string, 0)
 	regexes := make([]*regexp.Regexp, 0, len(args))
 	for _, arg := range args {
-		if !containsUppercase(arg) {
+		if !reporting.ContainsUppercase(arg) {
 			arg = "(?i)" + arg
 		}
 		regex, err := regexp.Compile(arg)
