@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 
+	"github.com/rikchilvers/gledger/reporting"
 	"github.com/spf13/cobra"
 )
 
@@ -14,8 +15,8 @@ var (
 	// flag to include only transactions before this date
 	endDate string
 	// flag to include only transactions on or before today
-	current       bool
-	filterContext filteringContext
+	current bool
+	filters []reporting.Filter
 )
 
 type filteringContext struct {
@@ -36,6 +37,17 @@ var rootCmd = &cobra.Command{
 	Use:   "gledger",
 	Short: "gledger - command line budgeting",
 	Long:  "gledger is a reimplementation of Ledger\nwith YNAB-style budgeting at its core",
+	PersistentPreRunE: func(_ *cobra.Command, args []string) error {
+		filters = make([]reporting.Filter, 0, len(args))
+		for _, arg := range args {
+			filter, err := reporting.NewFilter(arg)
+			if err != nil {
+				return err
+			}
+			filters = append(filters, filter)
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, _ []string) {
 		cmd.Help()
 	},
@@ -46,8 +58,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&beginDate, "begin", "b", "", "include only transactions on or after this date")
 	rootCmd.PersistentFlags().StringVarP(&endDate, "end", "e", "", "include only transactions before this date")
 	rootCmd.PersistentFlags().BoolVarP(&current, "current", "c", false, "include only transactions on or before today (overrides --begin and --end)")
-
-	filterContext = newFilteringContext(true, true, true)
 }
 
 // Execute runs gledger
