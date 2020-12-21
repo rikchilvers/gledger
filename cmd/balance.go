@@ -26,12 +26,14 @@ var balanceCmd = &cobra.Command{
 			CalculateBudget: showBudget,
 		}
 		journal := journal.NewJournal(config)
+
 		th := dateCheckedTransactionHandler(journal.AddTransaction)
 		if err := parse(th, journal.AddPeriodicTransaction); err != nil {
 			fmt.Println(err)
 			return
 		}
-		prepareBalance(journal, args)
+
+		prepareBalance(journal)
 		report(*journal.Root, flattenTree, collapseOnlyChildren)
 
 		if showBudget {
@@ -50,21 +52,36 @@ func init() {
 }
 
 // Prepare prepares the Journal for reporting
-func prepareBalance(j journal.Journal, args []string) {
-	matchedAccounts := j.Root.FindAccounts(func(a journal.Account) bool {
-		matches, _ := stringMatchesRegex(a.Name, args)
-		return !matches
-	})
+func prepareBalance(j journal.Journal) {
+	// Filter output with account name filters
+	if len(filters) > 0 {
+		matchedAccounts := j.Root.FindAccounts(func(a journal.Account) bool {
+			for _, f := range filters {
+				if f.FilterType != reporting.AccountNameFilter {
+					continue
+				}
 
-	for _, a := range matchedAccounts {
-		fmt.Println("unlinking", a.Name)
-		a.Unlink()
+				fmt.Printf("matching against %25s (%s)\n", a.Name, a.Path)
+
+				if f.MatchesString(a.Path) {
+					return false
+				}
+			}
+
+			return true
+		})
+
+		for _, a := range matchedAccounts {
+			fmt.Println("unlinking", a.Name)
+			a.Unlink()
+		}
 	}
 
 	if !showZero {
 		j.Root.RemoveEmptyChildren()
 
 		// showBudget is the same as journal.config.CalculateBudget
+		// TODO rename one of them
 		if showBudget {
 			j.BudgetRoot.RemoveEmptyChildren()
 		}
