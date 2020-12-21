@@ -24,13 +24,13 @@ const (
 	noteFilter
 )
 
-type filter struct {
+type Filter struct {
 	regex      *regexp.Regexp
 	filterType filterType
 }
 
-func newFilter(arg string) (filter, error) {
-	filter := filter{}
+func NewFilter(arg string) (Filter, error) {
+	filter := Filter{}
 
 	switch []rune(arg)[0] {
 	case '@':
@@ -54,7 +54,7 @@ func newFilter(arg string) (filter, error) {
 	return filter, nil
 }
 
-func (f filter) matchesTransaction(t journal.Transaction) bool {
+func (f Filter) matchesTransaction(t journal.Transaction) bool {
 	switch f.filterType {
 	case payeeFilter:
 		return f.regex.MatchString(t.Payee)
@@ -86,7 +86,7 @@ func (f filter) matchesTransaction(t journal.Transaction) bool {
 	return false
 }
 
-func (f filter) matchesString(s string) bool {
+func (f Filter) MatchesString(s string) bool {
 	return f.regex.MatchString(s)
 }
 
@@ -96,7 +96,7 @@ func MatchesRegex(t *journal.Transaction, args []string) (bool, error) {
 	}
 
 	for _, arg := range args {
-		filter, err := newFilter(arg)
+		filter, err := NewFilter(arg)
 		if err != nil {
 			return false, err
 		}
