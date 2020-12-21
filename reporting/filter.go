@@ -16,17 +16,17 @@ func ContainsUppercase(s string) bool {
 	return false
 }
 
-type filterType int
+type FilterType int
 
 const (
-	accountNameFilter filterType = iota
-	payeeFilter
-	noteFilter
+	AccountNameFilter FilterType = iota
+	PayeeFilter
+	NoteFilter
 )
 
 type Filter struct {
 	regex      *regexp.Regexp
-	filterType filterType
+	FilterType FilterType
 }
 
 func NewFilter(arg string) (Filter, error) {
@@ -34,13 +34,13 @@ func NewFilter(arg string) (Filter, error) {
 
 	switch []rune(arg)[0] {
 	case '@':
-		filter.filterType = payeeFilter
+		filter.FilterType = PayeeFilter
 		arg = arg[1:]
 	case '=':
-		filter.filterType = noteFilter
+		filter.FilterType = NoteFilter
 		arg = arg[1:]
 	default:
-		filter.filterType = accountNameFilter
+		filter.FilterType = AccountNameFilter
 	}
 
 	if !ContainsUppercase(arg) {
@@ -57,10 +57,10 @@ func NewFilter(arg string) (Filter, error) {
 }
 
 func (f Filter) MatchesTransaction(t journal.Transaction) bool {
-	switch f.filterType {
-	case payeeFilter:
+	switch f.FilterType {
+	case PayeeFilter:
 		return f.regex.MatchString(t.Payee)
-	case noteFilter:
+	case NoteFilter:
 		if f.regex.MatchString(t.HeaderNote) {
 			return true
 		}
@@ -76,7 +76,7 @@ func (f Filter) MatchesTransaction(t journal.Transaction) bool {
 				}
 			}
 		}
-	case accountNameFilter:
+	case AccountNameFilter:
 		for _, p := range t.Postings {
 			if f.regex.MatchString(p.AccountPath) {
 				return true
