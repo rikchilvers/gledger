@@ -157,11 +157,21 @@ expenseLoop:
 	for _, a := range ages[:len(ages)-rangeCap] { // we only care about the final 10
 		summedAges += a
 	}
-	summedAges = time.Duration(summedAges.Nanoseconds() / int64(len(ages)))
+
+	// filter arguments could mean there were no transactions to process
+	// so we need to guard against dividing by 0 later
+	count := int64(math.Max(1, float64(len(ages))))
+	summedAges = time.Duration(summedAges.Nanoseconds() / count)
+
 	js.ageOfMoney = math.Max(summedAges.Hours()/24, 0)
 }
 
 func (js *statisticsJournal) report() {
+	if js.transactionCount == 0 {
+		fmt.Println("No transactions matched arguments.")
+		return
+	}
+
 	// Report the files
 	fmt.Printf("Transactions found in %d files:\n", len(js.journalFiles))
 	for p := range js.journalFiles {
