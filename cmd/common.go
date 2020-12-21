@@ -102,7 +102,7 @@ func dateCheckedTransactionHandler(handler func(t *journal.Transaction, path str
 	}
 }
 
-func dateCheckedFilteringTransactionHandler(args []string, handler func(t *journal.Transaction, path string) error) func(t *journal.Transaction, path string) error {
+func dateCheckedFilteringTransactionHandler(handler func(t *journal.Transaction, path string) error) func(t *journal.Transaction, path string) error {
 	return func(t *journal.Transaction, path string) error {
 		withinRange, err := withinDateRange(t)
 		if err != nil {
@@ -113,16 +113,17 @@ func dateCheckedFilteringTransactionHandler(args []string, handler func(t *journ
 			return nil
 		}
 
-		matches, err := reporting.MatchesRegex(t, args)
-		if err != nil {
-			return nil
+		if len(filters) == 0 {
+			return handler(t, path)
 		}
 
-		if !matches {
-			return nil
+		for _, f := range filters {
+			if f.MatchesTransaction(*t) {
+				return handler(t, path)
+			}
 		}
 
-		return handler(t, path)
+		return nil
 	}
 }
 

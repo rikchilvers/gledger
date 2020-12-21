@@ -21,9 +21,9 @@ var statsCmd = &cobra.Command{
 	Aliases:      []string{"stats", "s"},
 	Short:        "Shows statistics about the journal",
 	SilenceUsage: true,
-	Run: func(_ *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		sj := newStatisticsJournal()
-		th := dateCheckedFilteringTransactionHandler(args, sj.transactionHandler)
+		th := dateCheckedFilteringTransactionHandler(sj.transactionHandler)
 		if err := parse(th, nil); err != nil {
 			fmt.Println(err)
 			return

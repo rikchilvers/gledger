@@ -54,7 +54,7 @@ func NewFilter(arg string) (Filter, error) {
 	return filter, nil
 }
 
-func (f Filter) matchesTransaction(t journal.Transaction) bool {
+func (f Filter) MatchesTransaction(t journal.Transaction) bool {
 	switch f.filterType {
 	case payeeFilter:
 		return f.regex.MatchString(t.Payee)
@@ -101,7 +101,7 @@ func MatchesRegex(t *journal.Transaction, args []string) (bool, error) {
 			return false, err
 		}
 
-		if filter.matchesTransaction(*t) {
+		if filter.MatchesTransaction(*t) {
 			return true, nil
 		}
 	}
