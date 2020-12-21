@@ -22,20 +22,20 @@ var statsCmd = &cobra.Command{
 	Short:        "Shows statistics about the journal",
 	SilenceUsage: true,
 	Run: func(_ *cobra.Command, args []string) {
-		js := newJournalStatistics()
-		th := dateCheckedFilteringTransactionHandler(args, js.transactionHandler)
+		sj := newStatisticsJournal()
+		th := dateCheckedFilteringTransactionHandler(args, sj.transactionHandler)
 		if err := parse(th, nil); err != nil {
 			fmt.Println(err)
 			return
 		}
-		js.prepare()
-		js.report()
+		sj.prepare()
+		sj.report()
 	},
 }
 
 const dateLayout string = "2006-01-02"
 
-type journalStatistics struct {
+type statisticsJournal struct {
 	firstTransactionDate time.Time
 	lastTransactionDate  time.Time
 	transactionCount     int
@@ -47,8 +47,8 @@ type journalStatistics struct {
 	ageOfMoney           float64
 }
 
-func newJournalStatistics() journalStatistics {
-	return journalStatistics{
+func newStatisticsJournal() statisticsJournal {
+	return statisticsJournal{
 		firstTransactionDate: time.Time{},
 		lastTransactionDate:  time.Time{},
 		transactionCount:     0,
@@ -61,7 +61,7 @@ func newJournalStatistics() journalStatistics {
 	}
 }
 
-func (js *journalStatistics) transactionHandler(t *journal.Transaction, path string) error {
+func (js *statisticsJournal) transactionHandler(t *journal.Transaction, path string) error {
 	// Log the file
 	js.journalFiles[path] = true
 
@@ -103,7 +103,7 @@ func (js *journalStatistics) transactionHandler(t *journal.Transaction, path str
 	return nil
 }
 
-func (js *journalStatistics) prepare() {
+func (js *statisticsJournal) prepare() {
 	// Sort income
 	incomeKeys := make([]time.Time, 0, len(js.incomeBuckets))
 	for k := range js.incomeBuckets {
@@ -161,7 +161,7 @@ expenseLoop:
 	js.ageOfMoney = math.Max(summedAges.Hours()/24, 0)
 }
 
-func (js *journalStatistics) report() {
+func (js *statisticsJournal) report() {
 	// Report the files
 	fmt.Printf("Transactions found in %d files:\n", len(js.journalFiles))
 	for p := range js.journalFiles {
