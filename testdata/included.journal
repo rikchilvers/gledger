@@ -1,8 +1,20 @@
-2020-10-22 A restaurant
-    ; a comment in the restaurant posting
-    Assets:Current 
-    Expenses:Life:Dining    £20
+;
+; ---------------------------
+; DO NOT CHANGE THIS FILE
+; ---------------------------
+;
 
-2020-10-24 ! Clothes store  ; new shoes
+2020-01-05 A restaurant
+    ; a comment in the restaurant posting
+    Assets:Current          £-20
+    Expenses:Life:Dining
+
+2020-01-06 ! Clothes store  ; new shoes
     Assets:Current
     Expenses:Life:Clothing    £50.00
+
+;
+; ---------------------------
+; DO NOT CHANGE THIS FILE
+; ---------------------------
+;
