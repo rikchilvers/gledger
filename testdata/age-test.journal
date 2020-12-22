@@ -1,0 +1,65 @@
+; income 
+
+2020-01-01
+	Income:Work		£-100
+	Assets:Current
+
+2020-02-01
+	Income:Work		£-100
+	Assets:Current
+
+2020-03-01
+	Income:Work		£-100
+	Assets:Current
+
+2020-04-01
+	Income:Work		£-100
+	Assets:Current
+
+2020-05-01
+	Income:Work		£-100
+	Assets:Current
+
+; groceries
+
+2020-01-01
+	Expenses:Groceries 		£60
+	Assets:Current
+
+2020-02-01
+	Expenses:Groceries 		£60
+	Assets:Current
+
+2020-03-01
+	Expenses:Groceries 		£60
+	Assets:Current
+
+2020-04-01
+	Expenses:Groceries 		£60
+	Assets:Current
+
+2020-05-01
+	Expenses:Groceries 		£60
+	Assets:Current
+
+; bar
+
+2020-01-05
+	Expenses:Dining Out 		£20
+	Assets:Current
+
+2020-02-05
+	Expenses:Dining Out 		£20
+	Assets:Current
+
+2020-03-05
+	Expenses:Dining Out 		£20
+	Assets:Current
+
+2020-04-05
+	Expenses:Dining Out 		£20
+	Assets:Current
+
+2020-05-05
+	Expenses:Dining Out 		£20
+	Assets:Current
