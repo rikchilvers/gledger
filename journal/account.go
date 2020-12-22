@@ -204,21 +204,19 @@ func (a *Account) Unlink() {
 	a.Parent = nil
 }
 
-// RemoveChildren removes children which return true from the matcher func
+// RemoveChildren removes children which do not return true from the matcher func
 func (a *Account) RemoveChildren(matcher func(a Account) bool) bool {
 	// Start with whether this account matches
 	matches := matcher(*a)
 
 	toUnlink := make([]*Account, 0, len(a.Children))
 	for _, child := range a.Children {
-		// If a child doesn't match, mark it for removal
 		childMatches := child.RemoveChildren(matcher)
 
 		if !childMatches {
 			toUnlink = append(toUnlink, child)
 		}
 
-		// Store result
 		matches = matches || childMatches
 	}
 

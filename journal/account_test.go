@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func createRoot() (a *Account, f, t string) {
+func createRoot() (*Account, string, string) {
 	/* Full
 	A0
 		A1a
@@ -30,7 +30,7 @@ func createRoot() (a *Account, f, t string) {
 	E0:E1b:E2b
 	I0:I1
 	*/
-	f = `A0:A1a
+	f := `A0:A1a
 A0:A1b:A2:A3
 E0:E1a:E2a:E3a
 E0:E1a:E2a:E3b
@@ -48,7 +48,7 @@ I0:I1`
 		E1b:E2b
 	I0:I1
 	*/
-	t = `A0
+	t := `A0
 	A1a
 	A1b:A2:A3
 E0
@@ -65,19 +65,22 @@ I0:I1`
 	I1
 	*/
 
+	root := NewAccount(RootID)
+
 	componentsAa := []string{"A0", "A1a"}
 	componentsAb := []string{"A0", "A1b", "A2", "A3"}
 	componentsEa := []string{"E0", "E1a", "E2a", "E3a"}
 	componentsEb := []string{"E0", "E1a", "E2a", "E3b"}
 	componentsEc := []string{"E0", "E1b", "E2b"}
 	componentsIa := []string{"I0", "I1"}
-	root := NewAccount(RootID)
+
 	aa := root.FindOrCreateAccount(componentsAa)
 	ab := root.FindOrCreateAccount(componentsAb)
 	ea := root.FindOrCreateAccount(componentsEa)
 	eb := root.FindOrCreateAccount(componentsEb)
 	ec := root.FindOrCreateAccount(componentsEc)
 	ia := root.FindOrCreateAccount(componentsIa)
+
 	aa.Path = aa.CreatePath()
 	ab.Path = ab.CreatePath()
 	ea.Path = ea.CreatePath()
@@ -234,5 +237,34 @@ func TestPruning(t *testing.T) {
 				t.Fatalf("pruning failed")
 			}
 		}
+	}
+}
+
+func TestRemoveChildren(t *testing.T) {
+	root := newTestAccount()
+
+	matcher := func(a Account) bool {
+		return a.Name == "Groceries"
+	}
+
+	root.RemoveChildren(matcher)
+
+	if len(root.Children) != 1 {
+		t.Fatalf("did not remove assets and income")
+	}
+
+	expenses, ok := root.Children["Expenses"]
+	if !ok || len(expenses.Children) != 1 {
+		t.Fatalf("did not find expenses or it had too many children")
+	}
+
+	life, ok := expenses.Children["Life"]
+	if !ok || len(life.Children) != 1 {
+		t.Fatalf("did not find life or it had too many children")
+	}
+
+	_, ok = life.Children["Groceries"]
+	if !ok {
+		t.Fatalf("did not find groceries")
 	}
 }
