@@ -1,6 +1,7 @@
 package journal
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -161,12 +162,59 @@ func TestFindOrCreate(t *testing.T) {
 }
 
 func TestAccountPathGeneration(t *testing.T) {
-	components := []string{"assets", "current"}
-	account := newAccountWithChildren(components, nil)
+	components := []string{"assets", "savings", "isa"}
+	isaAccount := newAccountWithChildren(components, nil)
 
-	if account.CreatePath() != "assets:current" {
+	if isaAccount.CreatePath() != "assets:savings:isa" {
 		t.Fatalf("account generates incorrect path")
 	}
+
+	if isaAccount.Path != "assets:savings:isa" {
+		t.Fatalf("account created with incorrect path")
+	}
+
+	// Check ISA account components
+	if !equal(isaAccount.PathComponents, components) {
+		for _, c := range isaAccount.Parent.PathComponents {
+			fmt.Printf("> %s\n", c)
+		}
+		t.Fatalf("isa created with incorrect components")
+	}
+
+	// Check Savings account components
+	if !equal(isaAccount.Parent.PathComponents, []string{"assets", "savings"}) {
+		for _, c := range isaAccount.Parent.PathComponents {
+			fmt.Printf("> %s\n", c)
+		}
+		t.Fatalf("savings created with incorrect components")
+	}
+
+	// Check Assets account components
+	if !equal(isaAccount.Parent.Parent.PathComponents, []string{"assets"}) {
+		for _, c := range isaAccount.Parent.PathComponents {
+			fmt.Printf("> %s\n", c)
+		}
+		t.Fatalf("assets created with incorrect components")
+	}
+
+	// if len(currentAccount.Children) != 1 {
+	// 	t.Fatalf("assets does not have any children: %d", len(currentAccount.Children))
+	// }
+	// if !equal(currentAccount.Children["current"].PathComponents, []string{"current"}) {
+	// 	t.Fatalf("account created with incorrect components")
+	// }
+}
+
+func equal(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func TestAccountPrinting(t *testing.T) {

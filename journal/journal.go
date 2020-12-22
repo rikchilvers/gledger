@@ -131,8 +131,6 @@ func wireUpPosting(root *Account, transaction *Transaction, p *Posting) error {
 	if p.Account == nil {
 		pathComponents := strings.Split(p.AccountPath, ":")
 		p.Account = root.FindOrCreateAccount(pathComponents)
-		p.Account.Path = p.AccountPath
-		p.Account.PathComponents = pathComponents
 	}
 
 	// Add the posting to its account's postings

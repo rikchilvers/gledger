@@ -53,7 +53,6 @@ func (a *Account) asString(level int) string {
 }
 
 // CreatePath creates a : delimited string from the Account's ancestry
-// TODO: set this as a variable from the posting
 func (a *Account) CreatePath() string {
 	path := a.Name
 	current := a
@@ -90,18 +89,24 @@ func (a *Account) WalkAncestors(action func(*Account) error) error {
 
 // Adds descending child accounts to a parent
 func newAccountWithChildren(components []string, parent *Account) *Account {
+	remainingComponents := components
 	for {
-		if len(components) == 0 {
+		if len(remainingComponents) == 0 {
 			return parent
 		}
 
-		a := NewAccount(components[0])
+		a := NewAccount(remainingComponents[0])
+
 		if parent != nil {
 			a.Parent = parent
 			parent.Children[a.Name] = a
 		}
+
+		a.Path = a.CreatePath()
+		a.PathComponents = components[:len(components)-len(remainingComponents)+1]
+
 		parent = a
-		components = components[1:]
+		remainingComponents = remainingComponents[1:]
 	}
 }
 
