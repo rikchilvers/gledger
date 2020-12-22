@@ -21,7 +21,7 @@ var balanceCmd = &cobra.Command{
 	Aliases:      []string{"bal", "b"},
 	Short:        "Shows accounts and their balances",
 	SilenceUsage: true,
-	Run: func(_ *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		config := journal.ProcessingConfig{
 			CalculateBudget: showBudget,
 		}
@@ -55,7 +55,7 @@ func init() {
 func prepareBalance(j journal.Journal) {
 	// Filter output with account name filters
 	if len(filters) > 0 {
-		matchedAccounts := j.Root.FindAccounts(func(a journal.Account) bool {
+		j.Root.RemoveChildren(func(a journal.Account) bool {
 			for _, f := range filters {
 				if f.FilterType != reporting.AccountNameFilter {
 					continue
@@ -64,17 +64,12 @@ func prepareBalance(j journal.Journal) {
 				fmt.Printf("matching against %25s (%s)\n", a.Name, a.Path)
 
 				if f.MatchesString(a.Path) {
-					return false
+					return true
 				}
 			}
 
-			return true
+			return false
 		})
-
-		for _, a := range matchedAccounts {
-			fmt.Println("unlinking", a.Name)
-			a.Unlink()
-		}
 	}
 
 	if !showZero {
