@@ -124,3 +124,33 @@ func withinDateRange(t *journal.Transaction) (bool, error) {
 
 	return withinRange, nil
 }
+
+func filterPipeline(t *journal.Transaction) (transaction *journal.Transaction, postings []*journal.Posting, err error) {
+	ok, err := withinDateRange(t)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !ok {
+		return nil, nil, nil
+	}
+
+	if len(filters) == 0 {
+		return t, t.Postings, nil
+	}
+
+	matchedPostings := make(map[*journal.Posting]bool)
+	for _, f := range filters {
+		matchesPayee, matchesTransactionNote, mp := f.MatchesTransactionHow(*t)
+		if matchesPayee || matchesTransactionNote {
+			transaction = t
+		}
+		for _, p := range mp {
+			matchedPostings[p] = true
+		}
+	}
+	for k := range matchedPostings {
+		postings = append(postings, k)
+	}
+
+	return transaction, postings, nil
+}

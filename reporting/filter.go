@@ -56,6 +56,42 @@ func NewFilter(arg string) (Filter, error) {
 	return filter, nil
 }
 
+func (f Filter) MatchesTransactionHow(t journal.Transaction) (matchesPayee, matchesTransactionNote bool, matchedPostings []*journal.Posting) {
+	mp := make(map[*journal.Posting]bool)
+	switch f.FilterType {
+	case PayeeFilter:
+		matchesPayee = f.regex.MatchString(t.Payee)
+	case NoteFilter, AccountNameFilter:
+		if f.FilterType == NoteFilter {
+			matchesTransactionNote = f.regex.MatchString(t.HeaderNote)
+			for _, n := range t.Notes {
+				matchesTransactionNote = matchesTransactionNote || f.regex.MatchString(n)
+			}
+		}
+
+		for _, p := range t.Postings {
+			if f.FilterType == NoteFilter {
+				for _, n := range p.Comments {
+					if f.regex.MatchString(n) {
+						mp[p] = true
+					}
+				}
+			}
+			if f.FilterType == AccountNameFilter {
+				if f.regex.MatchString(p.AccountPath) {
+					mp[p] = true
+				}
+				// TODO: match child accounts
+			}
+		}
+	}
+
+	for k := range mp {
+		matchedPostings = append(matchedPostings, k)
+	}
+	return
+}
+
 func (f Filter) MatchesTransaction(t journal.Transaction) bool {
 	switch f.FilterType {
 	case PayeeFilter:
