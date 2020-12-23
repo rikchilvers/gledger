@@ -125,25 +125,31 @@ func withinDateRange(t *journal.Transaction) (bool, error) {
 	return withinRange, nil
 }
 
-func filterPipeline(t *journal.Transaction) (transaction *journal.Transaction, postings []*journal.Posting, err error) {
+// checkAgainstFilters lets you know if the transaction matched the filters or
+// (in the case that transaction wide attributes didn't match)
+// which postings matched the filters
+func checkAgainstFilters(t *journal.Transaction) (matchedTransaction bool, postings []*journal.Posting, err error) {
 	ok, err := withinDateRange(t)
 	if err != nil {
-		return nil, nil, err
+		return false, nil, err
 	}
 	if !ok {
-		return nil, nil, nil
+		return false, nil, nil
 	}
 
 	if len(filters) == 0 {
-		return t, t.Postings, nil
+		return true, t.Postings, nil
 	}
 
 	matchedPostings := make(map[*journal.Posting]bool)
 	for _, f := range filters {
 		matchesPayee, matchesTransactionNote, mp := f.MatchesTransactionHow(*t)
+
 		if matchesPayee || matchesTransactionNote {
-			transaction = t
+			// If we've matched on something transaction-wide, we can return everything here
+			return true, t.Postings, nil
 		}
+
 		for _, p := range mp {
 			matchedPostings[p] = true
 		}
@@ -152,5 +158,5 @@ func filterPipeline(t *journal.Transaction) (transaction *journal.Transaction, p
 		postings = append(postings, k)
 	}
 
-	return transaction, postings, nil
+	return false, postings, nil
 }
