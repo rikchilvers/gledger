@@ -19,8 +19,7 @@ var printCmd = &cobra.Command{
 	SilenceUsage: true,
 	Run: func(_ *cobra.Command, _ []string) {
 		pj := newPrintJournal()
-		th := dateCheckedFilteringTransactionHandler(pj.transactionHandler)
-		if err := parse(th, nil); err != nil {
+		if err := parse(pj.transactionHandler, nil); err != nil {
 			fmt.Println(err)
 			return
 		}
@@ -40,7 +39,15 @@ func newPrintJournal() printJournal {
 }
 
 func (pj *printJournal) transactionHandler(t *journal.Transaction, _ string) error {
-	pj.transactions = append(pj.transactions, t)
+	matchedTransaction, postings, err := checkAgainstFilters(t)
+	if err != nil {
+		return err
+	}
+
+	if matchedTransaction || len(postings) > 0 {
+		pj.transactions = append(pj.transactions, t)
+	}
+
 	return nil
 }
 
