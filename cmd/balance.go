@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/rikchilvers/gledger/journal"
 	"github.com/rikchilvers/gledger/reporting"
@@ -61,8 +60,6 @@ func prepareBalance(j journal.Journal) {
 					continue
 				}
 
-				fmt.Printf("matching against %25s (%s)\n", a.Name, a.Path)
-
 				if f.MatchesString(a.Path) {
 					return true
 				}
@@ -81,26 +78,4 @@ func prepareBalance(j journal.Journal) {
 			j.BudgetRoot.RemoveEmptyChildren()
 		}
 	}
-}
-
-func stringMatchesRegex(input string, args []string) (bool, error) {
-	if len(args) == 0 {
-		return true, nil
-	}
-
-	for _, arg := range args {
-		if !reporting.ContainsUppercase(arg) {
-			arg = "(?i)" + arg
-		}
-		regex, err := regexp.Compile(arg)
-		if err != nil {
-			return false, err
-		}
-
-		if regex.MatchString(input) {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }

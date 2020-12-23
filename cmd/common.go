@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/rikchilvers/gledger/journal"
@@ -55,35 +54,6 @@ func report(account journal.Account, flattenTree, shouldCollapseOnlyChildren boo
 
 	// Print the root account's value
 	fmt.Printf("%20s\n", account.Amount.DisplayableQuantity(false))
-}
-
-// linkTransaction builds the account tree
-// TODO remove this
-func linkTransaction(root *journal.Account, transaction *journal.Transaction, _ string) error {
-	for _, p := range transaction.Postings {
-		// Use the parsed account path to find or create the account
-		if p.Account == nil {
-			p.Account = root.FindOrCreateAccount(strings.Split(p.AccountPath, ":"))
-		}
-
-		// Add postings to accounts
-		p.Account.Postings = append(p.Account.Postings, p)
-
-		// Add the transaction to the account
-		p.Account.Transactions = append(p.Account.Transactions, transaction)
-
-		// Add the posting's amount to the account and all its ancestors
-		if err := p.Account.WalkAncestors(func(a *journal.Account) error {
-			if err := a.Amount.Add(p.Amount); err != nil {
-				return err
-			}
-			return nil
-		}); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 // dateCheckedTransactionHandler wraps a transaction handler in --begin / --end checks

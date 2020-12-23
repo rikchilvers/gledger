@@ -352,16 +352,6 @@ func isCommentIndicator(r rune) bool {
 	return r == ';' || r == '#'
 }
 
-func countSpace(r rune) int {
-	if r == ' ' {
-		return 1
-	} else if r == '\t' {
-		return shared.TabWidth
-	}
-
-	return 0
-}
-
 func (l *lexer) takeToNextLine() []rune {
 	runes := make([]rune, 0, runeBufferCapacity)
 	for {
@@ -453,21 +443,6 @@ func (l *lexer) takeUntilMoreThanOneSpace() []rune {
 		l.next()
 		runes = append(runes, r)
 	}
-}
-
-func (l *lexer) takeUntilDecimal() []rune {
-	// Take until a decimal or the end of the line
-	runes := make([]rune, 0, runeBufferCapacity)
-	for {
-		r := l.next()
-		if r == '.' || r == eof {
-			break
-		}
-
-		runes = append(runes, r)
-	}
-
-	return runes
 }
 
 // Equal tells whether a and b contain the same elements.

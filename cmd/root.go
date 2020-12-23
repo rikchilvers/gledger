@@ -19,20 +19,6 @@ var (
 	filters []reporting.Filter
 )
 
-type filteringContext struct {
-	checkPayees   bool
-	checkAccounts bool
-	checkNotes    bool
-}
-
-func newFilteringContext(checkPayees, checkAccounts, checkNotes bool) filteringContext {
-	return filteringContext{
-		checkPayees:   checkPayees,
-		checkAccounts: checkAccounts,
-		checkNotes:    checkNotes,
-	}
-}
-
 var rootCmd = &cobra.Command{
 	Use:   "gledger",
 	Short: "gledger - command line budgeting",
