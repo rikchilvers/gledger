@@ -52,8 +52,11 @@ func NewJournal(config ProcessingConfig) Journal {
 
 // AddTransaction adds a transaction to the journal
 func (j *Journal) AddTransaction(t *Transaction, locationHint string) error {
-	// TODO: make filePaths an indexed map
-	return j.linkTransaction(t)
+	j.transactions = append(j.transactions, t)
+	j.filePaths = append(j.filePaths, locationHint)
+
+	// TODO remove this
+	return nil
 }
 
 // AddPeriodicTransaction adds a periodic transaction to the journal
@@ -73,9 +76,15 @@ func (j *Journal) AddPeriodicTransaction(pt *PeriodicTransaction, locationHint s
 	// Convert the periodic transaction to real transactions then link them
 	// TODO take time bounds for running periodic transactions
 	transactions := pt.Run(time.Time{}, time.Time{})
-	for _, p := range transactions {
-		if err := j.linkTransaction(&p); err != nil {
+	for _, t := range transactions {
+		if err := j.AddTransaction(&t, locationHint); err != nil {
 			return err
+		}
+
+		for _, p := range t.Postings {
+			if err := j.AddPosting(p); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -97,31 +106,26 @@ func (j *Journal) linkBudgetTransaction(transaction *Transaction) error {
 	return nil
 }
 
-func (j *Journal) linkTransaction(transaction *Transaction) error {
-	for _, p := range transaction.Postings {
-		if err := wireUpPosting(j.Root, transaction, p); err != nil {
-			return err
+func (j *Journal) AddPosting(p *Posting) error {
+	if err := wireUpPosting(j.Root, p.Transaction, p); err != nil {
+		return err
+	}
+
+	if j.config.CalculateBudget {
+		// Handle budget posting if this posting is an Expense
+		if p.Account.PathComponents[0] == ExpensesID {
+			if err := j.handleExpensesPosting(p); err != nil {
+				return err
+			}
 		}
 
-		// Add the transaction to the list
-		j.transactions = append(j.transactions, transaction)
-
-		if j.config.CalculateBudget {
-			// Handle budget posting if this posting is an Expense
-			if p.Account.PathComponents[0] == ExpensesID {
-				if err := j.handleExpensesPosting(p); err != nil {
-					return err
-				}
+		// Handle income for budgeting
+		if p.Account.PathComponents[0] == IncomeID {
+			if err := j.handleIncomePosting(p); err != nil {
+				return err
 			}
-
-			// Handle income for budgeting
-			if p.Account.PathComponents[0] == IncomeID {
-				if err := j.handleIncomePosting(p); err != nil {
-					return err
-				}
-			}
-
 		}
+
 	}
 
 	return nil
