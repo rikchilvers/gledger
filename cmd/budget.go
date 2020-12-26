@@ -13,16 +13,13 @@ var budgetCmd = &cobra.Command{
 	Short:        "Shows budget accounts and their balances",
 	SilenceUsage: true,
 	Run: func(_ *cobra.Command, _ []string) {
-		config := journal.ProcessingConfig{
-			CalculateBudget: true,
-		}
-		journal := journal.NewJournal(config)
-		if err := parse(journal.AddTransaction, journal.AddPeriodicTransaction); err != nil {
+		bp := newBudgetProcessor()
+		if err := parse(bp.transactionHandler, bp.periodicTransactionHandler); err != nil {
 			fmt.Println(err)
 			return
 		}
-		prepareBudget(&journal)
-		report(*journal.BudgetRoot, flattenTree, collapseOnlyChildren)
+		prepareBalance(bp.journal)
+		report(*bp.journal.BudgetRoot, flattenTree, collapseOnlyChildren)
 	},
 }
 
@@ -31,6 +28,47 @@ func init() {
 	budgetCmd.Flags().BoolVarP(&showZero, "show-zero", "Z", false, "show accounts with zero amount")
 	budgetCmd.Flags().BoolVarP(&collapseOnlyChildren, "collapse", "C", false, "collapse single child accounts into a list")
 	rootCmd.AddCommand(budgetCmd)
+}
+
+type budgetProcessor struct {
+	journal journal.Journal
+}
+
+func newBudgetProcessor() budgetProcessor {
+	return budgetProcessor{
+		journal: journal.NewJournal(journal.ProcessingConfig{
+			CalculateBudget: true,
+		}),
+	}
+}
+
+func (bp *budgetProcessor) periodicTransactionHandler(t *journal.PeriodicTransaction, location string) error {
+	return bp.journal.AddPeriodicTransaction(t, location)
+}
+
+func (bp *budgetProcessor) transactionHandler(t *journal.Transaction, location string) error {
+	matchedTransaction, postings, err := checkAgainstFilters(t)
+	if err != nil {
+		return err
+	}
+
+	if !matchedTransaction && len(postings) == 0 {
+		return nil
+	}
+
+	if matchedTransaction || len(postings) > 0 {
+		if err := bp.journal.AddTransaction(t, location); err != nil {
+			return err
+		}
+	}
+
+	for _, p := range postings {
+		if err := bp.journal.AddPosting(p); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func prepareBudget(j *journal.Journal) {

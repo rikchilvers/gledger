@@ -1,5 +1,5 @@
 2020-10-01 * Salary
-    Assets:Current    £1000
+    Assets:Current    £100
     Income:Job
 
 ~ 2020-10
@@ -12,3 +12,16 @@
 2020-10-02 * Grocery store ; unbudgeted spending
     Assets:Current
     Expenses:Groceries    £20.00
+
+
+~ 2020-11
+    Groceries   £45
+
+
+2020-11-01 * Salary
+    Assets:Current    £100
+    Income:Job
+
+2020-11-01 * Grocery store
+    Assets:Current
+    Expenses:Groceries    £30.00

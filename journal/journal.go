@@ -1,15 +1,15 @@
 package journal
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
 
 // Identifiers for accounts
 const (
-	RootID         string = "_root_"
-	BudgetRootID   string = "_budget_root_"
-	ToBeBudgetedID string = "To Be Budgeted"
+	RootID       string = "_root_"
+	BudgetRootID string = "_budget_root_"
 	// TODO allow these to be set by the user
 	ExpensesID string = "Expenses"
 	IncomeID   string = "Income"
@@ -41,12 +41,6 @@ func NewJournal(config ProcessingConfig) Journal {
 		BudgetRoot:           NewAccount(BudgetRootID),
 	}
 
-	if config.CalculateBudget {
-		tbb := NewAccount(ToBeBudgetedID)
-		tbb.Parent = j.BudgetRoot
-		j.BudgetRoot.Children[ToBeBudgetedID] = tbb
-	}
-
 	return j
 }
 
@@ -61,7 +55,6 @@ func (j *Journal) AddTransaction(t *Transaction, locationHint string) error {
 
 // AddPeriodicTransaction adds a periodic transaction to the journal
 func (j *Journal) AddPeriodicTransaction(pt *PeriodicTransaction, locationHint string) error {
-	// Add the periodic transaction to the journal
 	j.periodicTransactions = append(j.periodicTransactions, pt)
 
 	if pt.Period.Interval == PNone {
@@ -92,15 +85,16 @@ func (j *Journal) AddPeriodicTransaction(pt *PeriodicTransaction, locationHint s
 }
 
 // linkBudgetTransaction wires up allocations to the budget
+// TODO: maybe don't need this?
 func (j *Journal) linkBudgetTransaction(transaction *Transaction) error {
+	fmt.Println(transaction)
 	for _, p := range transaction.Postings {
 		if err := wireUpPosting(j.BudgetRoot, transaction, p); err != nil {
 			return err
 		}
 
-		// Subtract the posting's amount from To Be Budgeted
-		tbb := j.BudgetRoot.Children[ToBeBudgetedID]
-		tbb.Amount.Subtract(p.Amount)
+		// Subtract the posting's amount from the budget root (i.e. To Be Budgeted)
+		// j.BudgetRoot.Amount.Subtract(p.Amount)
 	}
 
 	return nil
@@ -140,7 +134,7 @@ func wireUpPosting(root *Account, transaction *Transaction, p *Posting) error {
 	// Add the posting to its account's postings
 	p.Account.Postings = append(p.Account.Postings, p)
 
-	// Add the transaction to the account and the journal
+	// Add the transaction to the account's transactions
 	p.Account.Transactions = append(p.Account.Transactions, transaction)
 
 	// Add the posting's amount to the account and all of its ancestors
@@ -163,10 +157,8 @@ func wireUpPosting(root *Account, transaction *Transaction, p *Posting) error {
 
 func (j *Journal) handleIncomePosting(posting *Posting) error {
 	// Add the income to 'To Be Budgeted'
-	tbb := j.BudgetRoot.Children[ToBeBudgetedID]
-
 	// We subtract to make the income positive
-	if err := tbb.WalkAncestors(func(a *Account) error {
+	if err := j.BudgetRoot.WalkAncestors(func(a *Account) error {
 		if err := a.Amount.Subtract(posting.Amount); err != nil {
 			return err
 		}

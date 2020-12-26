@@ -217,7 +217,7 @@ func (tb *transactionBuilder) endNormalTransaction(t *journal.Transaction, p Par
 	if tb.transactionType == periodicTransaction && tb.periodicTransaction.Period.Interval == journal.PNone {
 		hasBudgetSource := false
 		for _, p := range t.Postings {
-			if p.AccountPath == journal.ToBeBudgetedID {
+			if p.AccountPath == journal.BudgetRootID {
 				hasBudgetSource = true
 				break
 			}
@@ -226,7 +226,7 @@ func (tb *transactionBuilder) endNormalTransaction(t *journal.Transaction, p Par
 		if !hasBudgetSource {
 			source := journal.NewPosting()
 			source.Transaction = t
-			source.AccountPath = journal.ToBeBudgetedID
+			source.AccountPath = journal.BudgetRootID
 			t.AddPosting(source)
 		}
 	}
