@@ -23,8 +23,7 @@ var statsCmd = &cobra.Command{
 	SilenceUsage: true,
 	Run: func(_ *cobra.Command, _ []string) {
 		sj := newStatisticsJournal()
-		th := dateCheckedFilteringTransactionHandler(sj.transactionHandler)
-		if err := parse(th, nil); err != nil {
+		if err := parse(sj.transactionHandler, nil); err != nil {
 			fmt.Println(err)
 			return
 		}
@@ -62,6 +61,16 @@ func newStatisticsJournal() statisticsJournal {
 }
 
 func (js *statisticsJournal) transactionHandler(t *journal.Transaction, path string) error {
+	matchedTransaction, postings, err := checkAgainstFilters(t)
+	if err != nil {
+		return err
+	}
+
+	// If we match on any postings, consider the whole transaction as matched
+	if !matchedTransaction && len(postings) == 0 {
+		return nil
+	}
+
 	// Log the file
 	js.journalFiles[path] = true
 
@@ -79,7 +88,7 @@ func (js *statisticsJournal) transactionHandler(t *journal.Transaction, path str
 	}
 
 	// Add the account path
-	for _, p := range t.Postings {
+	for _, p := range postings {
 		// We don't need to check if it exists beforehand because we don't care about the value
 		js.uniqueAccounts[p.AccountPath] = true
 	}
@@ -88,7 +97,7 @@ func (js *statisticsJournal) transactionHandler(t *journal.Transaction, path str
 	js.uniquePayees[t.Payee] = true
 
 	// Add income and expenses for age of money calculation
-	for _, p := range t.Postings {
+	for _, p := range postings {
 		components := strings.Split(p.AccountPath, ":")
 
 		if components[0] == journal.IncomeID {
