@@ -104,7 +104,9 @@ func (p *Parser) parseItem(t itemType, content []rune) error {
 		}
 
 		p.transactionBuilder.beginTransaction(periodicTransaction)
-		p.transactionBuilder.build(t, content)
+		if err := p.transactionBuilder.build(t, content); err != nil {
+			return fmt.Errorf("error parsing period\n%w", err)
+		}
 	default:
 		return p.transactionBuilder.build(t, content)
 	}
