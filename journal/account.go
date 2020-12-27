@@ -87,53 +87,54 @@ func (a *Account) WalkAncestors(action func(*Account) error) error {
 	return a.Parent.WalkAncestors(action)
 }
 
-// Adds descending child accounts to a parent
-func newAccountWithChildren(components []string, parent *Account) *Account {
-	remainingComponents := components
-	for {
-		if len(remainingComponents) == 0 {
-			return parent
-		}
-
-		a := NewAccount(remainingComponents[0])
-
-		if parent != nil {
-			a.Parent = parent
-			parent.Children[a.Name] = a
-		}
-
-		a.Path = a.CreatePath()
-		a.PathComponents = components[:len(components)-len(remainingComponents)+1]
-
-		parent = a
-		remainingComponents = remainingComponents[1:]
+func newAccountWithChildren(parent *Account, components []string) *Account {
+	if len(components) == 0 {
+		return parent
 	}
+
+	child := NewAccount(components[0])
+	if parent != nil {
+		child.Parent = parent
+		parent.Children[child.Name] = child
+	}
+
+	if parent == nil || parent.Name == RootID || parent.Name == BudgetRootID {
+		child.PathComponents = []string{components[0]}
+	} else {
+		child.PathComponents = append(parent.PathComponents, components[0])
+	}
+
+	child.Path = child.CreatePath()
+
+	return newAccountWithChildren(child, components[1:])
 }
 
 // FindOrCreateAccount searches the Account's children for one matching the components,
 // creating children as necessary if it does not find matching ones
 func (a *Account) FindOrCreateAccount(components []string) *Account {
-	deepest, remaining := a.findChildAndDescend(components)
+	child, remainingComponents := a.findChild(components)
 
 	// If there were no remaining accounts, we found the deepest
-	if remaining == nil {
-		return deepest
+	if remainingComponents == nil {
+		return child
 	}
 
 	// Otherwise, add a child to the root account
-	return newAccountWithChildren(remaining, deepest)
+	// fmt.Println("new account", remainingComponents, child.Name)
+	return newAccountWithChildren(child, remainingComponents)
 }
 
 // Returns the deepest account found and any remaining components
-func (a *Account) findChildAndDescend(components []string) (*Account, []string) {
+func (a *Account) findChild(components []string) (*Account, []string) {
 	if account, didFind := a.Children[components[0]]; didFind {
 		if len(components) > 1 {
-			return account.findChildAndDescend(components[1:])
+			return account.findChild(components[1:])
 		}
 		// There are no remaining components so we found the deepest child
 		return account, nil
 	}
-	// There are remaining components so return those and the deepest parent
+	// We didn't find a child and there are remaining components
+	// so return those and the deepest parent
 	return a, components
 }
 

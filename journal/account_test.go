@@ -94,7 +94,7 @@ I0:I1`
 
 func TestNewAccountWithChildren(t *testing.T) {
 	components := []string{"assets", "current"}
-	account := newAccountWithChildren(components, nil)
+	account := newAccountWithChildren(nil, components)
 
 	if account.Name != "current" {
 		t.Fatalf("account name is incorrect")
@@ -163,7 +163,7 @@ func TestFindOrCreate(t *testing.T) {
 
 func TestAccountPathGeneration(t *testing.T) {
 	components := []string{"assets", "savings", "isa"}
-	isaAccount := newAccountWithChildren(components, nil)
+	isaAccount := newAccountWithChildren(nil, components)
 
 	if isaAccount.CreatePath() != "assets:savings:isa" {
 		t.Fatalf("account generates incorrect path")
@@ -219,7 +219,7 @@ func equal(a, b []string) bool {
 
 func TestAccountPrinting(t *testing.T) {
 	components := []string{"assets", "my savings account "}
-	account := newAccountWithChildren(components, nil)
+	account := newAccountWithChildren(nil, components)
 
 	result := account.Parent.String()
 	expected := "assets\n  my savings account "
