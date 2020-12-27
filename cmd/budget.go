@@ -57,9 +57,7 @@ func (bp *budgetProcessor) transactionHandler(t *journal.Transaction, location s
 	}
 
 	if matchedTransaction || len(postings) > 0 {
-		if err := bp.journal.AddTransaction(t, location); err != nil {
-			return err
-		}
+		bp.journal.AddTransaction(t, location)
 	}
 
 	for _, p := range postings {

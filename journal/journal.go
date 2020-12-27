@@ -44,12 +44,9 @@ func NewJournal(config ProcessingConfig) Journal {
 }
 
 // AddTransaction adds a transaction to the journal
-func (j *Journal) AddTransaction(t *Transaction, locationHint string) error {
+func (j *Journal) AddTransaction(t *Transaction, locationHint string) {
 	j.transactions = append(j.transactions, t)
 	j.filePaths = append(j.filePaths, locationHint)
-
-	// TODO remove this
-	return nil
 }
 
 // AddPeriodicTransaction adds a periodic transaction to the journal
@@ -76,9 +73,7 @@ func (j *Journal) AddPeriodicTransaction(pt *PeriodicTransaction, locationHint s
 	// TODO take time bounds for running periodic transactions
 	transactions := pt.Run(time.Time{}, time.Time{})
 	for _, t := range transactions {
-		if err := j.AddTransaction(&t, locationHint); err != nil {
-			return err
-		}
+		j.AddTransaction(&t, locationHint)
 
 		for _, p := range t.Postings {
 			if err := j.AddPosting(p); err != nil {

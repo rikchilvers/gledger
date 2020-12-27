@@ -68,9 +68,7 @@ func (bp *balanceProcessor) transactionHandler(t *journal.Transaction, location 
 	}
 
 	if matchedTransaction || len(postings) > 0 {
-		if err := bp.journal.AddTransaction(t, location); err != nil {
-			return err
-		}
+		bp.journal.AddTransaction(t, location)
 	}
 
 	for _, p := range postings {
