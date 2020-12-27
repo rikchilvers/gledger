@@ -116,10 +116,10 @@ func wireUpPosting(root *Account, transaction *Transaction, p *Posting) error {
 		p.Account = root.FindOrCreateAccount(pathComponents)
 	}
 
-	// Add the posting to its account's postings
+	// Add the posting to the account
 	p.Account.Postings = append(p.Account.Postings, p)
 
-	// Add the transaction to the account's transactions
+	// Add the transaction to the account
 	p.Account.Transactions = append(p.Account.Transactions, transaction)
 
 	// Add the posting's amount to the account and all of its ancestors
@@ -128,7 +128,7 @@ func wireUpPosting(root *Account, transaction *Transaction, p *Posting) error {
 		if a.Amount.Commodity == "" {
 			a.Amount.Commodity = p.Amount.Commodity
 		}
-		if err := a.Amount.Add(p.Amount); err != nil {
+		if err := a.Amount.Add(*p.Amount); err != nil {
 			return err
 		}
 		return nil
