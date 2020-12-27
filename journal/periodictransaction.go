@@ -45,7 +45,7 @@ func NewPeriodicTransaction() PeriodicTransaction {
 
 // Run converts a single PeriodicTransaction into an array of Transactions for a given date span
 // Does not extend time bounds to match parameters
-func (pt PeriodicTransaction) Run(start, end time.Time) []Transaction {
+func (pt *PeriodicTransaction) Run(start, end time.Time) []Transaction {
 	if pt.Period.Interval == PNone {
 		pt.Transaction.Date = pt.Period.StartDate
 		return []Transaction{pt.Transaction}
