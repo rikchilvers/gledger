@@ -31,8 +31,8 @@ var balanceCmd = &cobra.Command{
 		report(*bp.journal.Root, flattenTree, collapseOnlyChildren)
 
 		if showBudget {
-			fmt.Println("")
-			report(*bp.journal.BudgetRoot, flattenTree, collapseOnlyChildren)
+			fmt.Println("would print budget here")
+			// report(*bp.journal.BudgetRoot, flattenTree, collapseOnlyChildren)
 		}
 	},
 }
@@ -90,7 +90,8 @@ func prepareBalance(j journal.Journal) {
 		// showBudget is the same as journal.config.CalculateBudget
 		// TODO rename one of them
 		if showBudget {
-			j.BudgetRoot.RemoveEmptyChildren()
+			fmt.Println("would remove empty children from budget")
+			// j.BudgetRoot.RemoveEmptyChildren()
 		}
 	}
 }

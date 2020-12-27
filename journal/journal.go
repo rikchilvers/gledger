@@ -1,7 +1,6 @@
 package journal
 
 import (
-	"fmt"
 	"strings"
 	"time"
 )
@@ -20,9 +19,9 @@ type Journal struct {
 	config               ProcessingConfig
 	transactions         []*Transaction
 	periodicTransactions []*PeriodicTransaction
-	filePaths            []string // the
+	filePaths            []string
 	Root                 *Account
-	BudgetRoot           *Account
+	Budget               budget
 }
 
 // ProcessingConfig contains flags used when parsing transactions
@@ -38,7 +37,7 @@ func NewJournal(config ProcessingConfig) Journal {
 		periodicTransactions: make([]*PeriodicTransaction, 0, 256),
 		filePaths:            make([]string, 0, 10),
 		Root:                 NewAccount(RootID),
-		BudgetRoot:           NewAccount(BudgetRootID),
+		Budget:               newBudget(),
 	}
 
 	return j
@@ -61,7 +60,14 @@ func (j *Journal) AddPeriodicTransaction(pt *PeriodicTransaction, locationHint s
 		if j.config.CalculateBudget {
 			// Handle budget allocations differently
 			// PeriodicTransaction with no interval are considered budget transactions
-			return j.linkBudgetTransaction(&pt.Transaction)
+			// running the pt is necessary to ensure it's transaction has a date
+			ts := pt.Run(time.Time{}, time.Time{})[0]
+			for _, p := range ts.Postings {
+				// if err := wireUpPosting(j.BudgetRoot, transaction, p); err != nil {
+				if err := j.Budget.addEnvelopePosting(p); err != nil {
+					return err
+				}
+			}
 		}
 		return nil
 	}
@@ -84,22 +90,7 @@ func (j *Journal) AddPeriodicTransaction(pt *PeriodicTransaction, locationHint s
 	return nil
 }
 
-// linkBudgetTransaction wires up allocations to the budget
-// TODO: maybe don't need this?
-func (j *Journal) linkBudgetTransaction(transaction *Transaction) error {
-	fmt.Println(transaction)
-	for _, p := range transaction.Postings {
-		if err := wireUpPosting(j.BudgetRoot, transaction, p); err != nil {
-			return err
-		}
-
-		// Subtract the posting's amount from the budget root (i.e. To Be Budgeted)
-		// j.BudgetRoot.Amount.Subtract(p.Amount)
-	}
-
-	return nil
-}
-
+// AddPosting handles adding normal transaction postings to the journal
 func (j *Journal) AddPosting(p *Posting) error {
 	if err := wireUpPosting(j.Root, p.Transaction, p); err != nil {
 		return err
@@ -108,18 +99,17 @@ func (j *Journal) AddPosting(p *Posting) error {
 	if j.config.CalculateBudget {
 		// Handle budget posting if this posting is an Expense
 		if p.Account.PathComponents[0] == ExpensesID {
-			if err := j.handleExpensesPosting(p); err != nil {
+			if err := j.Budget.addExpensePosting(p); err != nil {
 				return err
 			}
 		}
 
 		// Handle income for budgeting
 		if p.Account.PathComponents[0] == IncomeID {
-			if err := j.handleIncomePosting(p); err != nil {
+			if err := j.Budget.addIncomePosting(p); err != nil {
 				return err
 			}
 		}
-
 	}
 
 	return nil
@@ -149,42 +139,6 @@ func wireUpPosting(root *Account, transaction *Transaction, p *Posting) error {
 		return nil
 	}
 	if err := p.Account.WalkAncestors(add); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (j *Journal) handleIncomePosting(posting *Posting) error {
-	// Add the income to 'To Be Budgeted'
-	// We subtract to make the income positive
-	if err := j.BudgetRoot.WalkAncestors(func(a *Account) error {
-		if err := a.Amount.Subtract(posting.Amount); err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (j *Journal) handleExpensesPosting(posting *Posting) error {
-	pathComponents := posting.Account.PathComponents[1:]
-	account := j.BudgetRoot.FindOrCreateAccount(pathComponents)
-	// As this account is not the same as the non-budget expenses account version
-	// we need to ask it to create its path as it drops the 'Expenses:' head
-	account.Path = account.CreatePath()
-	account.PathComponents = pathComponents
-
-	// Subtract the posting's amount from the account and all of its ancestors
-	if err := account.WalkAncestors(func(a *Account) error {
-		if err := a.Amount.Subtract(posting.Amount); err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
 		return err
 	}
 
