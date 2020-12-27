@@ -19,8 +19,7 @@ var budgetCmd = &cobra.Command{
 			return
 		}
 		prepareBalance(bp.journal)
-		fmt.Println("would report budget")
-		// report(*bp.journal.BudgetRoot, flattenTree, collapseOnlyChildren)
+		bp.report()
 	},
 }
 
@@ -70,6 +69,14 @@ func (bp *budgetProcessor) transactionHandler(t *journal.Transaction, location s
 	}
 
 	return nil
+}
+
+func (bp *budgetProcessor) report() {
+	for month, budget := range bp.journal.Budget.Months {
+		fmt.Println(month)
+		report(*budget.EnvelopeRoot, flattenTree, collapseOnlyChildren)
+		fmt.Println()
+	}
 }
 
 func prepareBudget(j *journal.Journal) {

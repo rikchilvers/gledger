@@ -21,7 +21,7 @@ type Journal struct {
 	periodicTransactions []*PeriodicTransaction
 	filePaths            []string
 	Root                 *Account
-	Budget               budget
+	Budget               Budget
 }
 
 // ProcessingConfig contains flags used when parsing transactions
