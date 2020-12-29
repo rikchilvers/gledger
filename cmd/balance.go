@@ -40,7 +40,6 @@ var balanceCmd = &cobra.Command{
 func init() {
 	balanceCmd.Flags().BoolVarP(&flattenTree, "flatten", "F", false, "show accounts as a flat list")
 	balanceCmd.Flags().BoolVarP(&showZero, "show-zero", "Z", false, "show accounts with zero amount")
-	balanceCmd.Flags().BoolVarP(&showBudget, "show-budget", "B", false, "show budget account balances")
 	balanceCmd.Flags().BoolVarP(&collapseOnlyChildren, "collapse", "C", false, "collapse single child accounts into a list")
 	rootCmd.AddCommand(balanceCmd)
 }
@@ -51,9 +50,7 @@ type balanceProcessor struct {
 
 func newBalanceProcessor() balanceProcessor {
 	return balanceProcessor{
-		journal: journal.NewJournal(journal.ProcessingConfig{
-			CalculateBudget: showBudget,
-		}),
+		journal: journal.NewJournal(),
 	}
 }
 
@@ -84,12 +81,5 @@ func (bp *balanceProcessor) transactionHandler(t *journal.Transaction, location 
 func prepareBalance(j journal.Journal) {
 	if !showZero {
 		j.Root.RemoveEmptyChildren()
-
-		// showBudget is the same as journal.config.CalculateBudget
-		// TODO rename one of them
-		if showBudget {
-			fmt.Println("would remove empty children from budget")
-			// j.BudgetRoot.RemoveEmptyChildren()
-		}
 	}
 }

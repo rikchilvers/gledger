@@ -16,28 +16,19 @@ const (
 
 // Journal holds information about the transactions parsed
 type Journal struct {
-	config               ProcessingConfig
 	transactions         []*Transaction
 	periodicTransactions []*PeriodicTransaction
 	filePaths            []string
 	Root                 *Account
-	Budget               Budget
-}
-
-// ProcessingConfig contains flags used when parsing transactions
-type ProcessingConfig struct {
-	CalculateBudget bool
 }
 
 // NewJournal creates a Journal
-func NewJournal(config ProcessingConfig) Journal {
+func NewJournal() Journal {
 	j := Journal{
-		config:               config,
 		transactions:         make([]*Transaction, 0, 256),
 		periodicTransactions: make([]*PeriodicTransaction, 0, 256),
 		filePaths:            make([]string, 0, 10),
 		Root:                 NewAccount(RootID),
-		Budget:               NewBudget(),
 	}
 
 	return j
@@ -54,18 +45,8 @@ func (j *Journal) AddPeriodicTransaction(pt *PeriodicTransaction, locationHint s
 	j.periodicTransactions = append(j.periodicTransactions, pt)
 
 	if pt.Period.Interval == PNone {
-		if j.config.CalculateBudget {
-			// Handle budget allocations differently
-			// PeriodicTransaction with no interval are considered budget transactions
-			// running the pt is necessary to ensure it's transaction has a date
-			ts := pt.Run(time.Time{}, time.Time{})[0]
-			for _, p := range ts.Postings {
-				// if err := wireUpPosting(j.BudgetRoot, transaction, p); err != nil {
-				if err := j.Budget.addEnvelopePosting(p); err != nil {
-					return err
-				}
-			}
-		}
+		// Handle budget allocations differently
+		// PeriodicTransaction with no interval are considered budget transactions
 		return nil
 	}
 
@@ -90,23 +71,6 @@ func (j *Journal) AddPosting(p *Posting) error {
 	if err := wireUpPosting(j.Root, p.Transaction, p); err != nil {
 		return err
 	}
-
-	if j.config.CalculateBudget {
-		// Handle budget posting if this posting is an Expense
-		if p.Account.PathComponents[0] == ExpensesID {
-			if err := j.Budget.addExpensePosting(p); err != nil {
-				return err
-			}
-		}
-
-		// Handle income for budgeting
-		if p.Account.PathComponents[0] == IncomeID {
-			if err := j.Budget.addIncomePosting(p); err != nil {
-				return err
-			}
-		}
-	}
-
 	return nil
 }
 
