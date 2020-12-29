@@ -79,10 +79,9 @@ func (bp *budgetProcessor) transactionHandler(t *journal.Transaction, location s
 		return nil
 	}
 
-	if matchedTransaction || len(postings) > 0 {
-		// bp.journal.AddTransaction(t, location)
-		fmt.Println("journal would normally add a transaction here")
-	}
+	// if matchedTransaction || len(postings) > 0 {
+	// 	bp.journal.AddTransaction(t, location)
+	// }
 
 	for _, p := range postings {
 		switch strings.Split(p.AccountPath, ":")[0] {
@@ -114,9 +113,25 @@ func (bp *budgetProcessor) report() {
 		budget := bp.budget.Months[month]
 		fmt.Println(month)
 
+		// Padding
+		fmt.Println()
+
 		// Print the funds
-		fmt.Printf("%20s  %s\n", budget.Income.Amount.DisplayableQuantity(true), budget.Income.Name)
-		fmt.Printf("%20s  %s\n", budget.ExpenseRoot.Amount.DisplayableQuantity(true), budget.ExpenseRoot.Name)
+		fmt.Printf("%30s | %20s\n", budget.Income.Name, budget.Income.Amount.DisplayableQuantity(true))
+		// fmt.Printf("%30s | %20s\n", budget.ExpenseRoot.Name, budget.ExpenseRoot.Amount.DisplayableQuantity(true))
+		fmt.Printf("%30s | %20s\n", "Overspent in 2020-??", "£??.??")
+		fmt.Printf("%30s | %20s\n", "Budgeted", "£??.??")
+		fmt.Printf("%30s | %20s\n", "Budgeted in the future", "£??.??")
+		fmt.Println("-----------------------------------------------------")
+		fmt.Printf("%30s | %20s\n", "To be budgeted", "£??.??")
+
+		// Padding
+		fmt.Println()
+		fmt.Println()
+
+		fmt.Printf("%-30s | %-20s | %-20s | %-20s |\n", "Category", "Budgeted", "Activity", "Available")
+		fmt.Printf("--------------------------------------------------")
+		fmt.Printf("---------------------------------------------------\n")
 
 		// Print the envelopes
 		for _, cn := range budget.EnvelopeRoot.SortedChildNames() {
@@ -137,7 +152,7 @@ func (bp *budgetProcessor) report() {
 				panic(err)
 			}
 
-			fmt.Printf("%20s  %20s  %20s  %s\n", expenseAccount.Amount, envelopeAccount.Amount, amount.DisplayableQuantity(true), cn)
+			fmt.Printf("%-30s | %20s | %20s | %20s |\n", cn, expenseAccount.Amount, envelopeAccount.Amount, amount.DisplayableQuantity(true))
 		}
 
 		fmt.Println()
