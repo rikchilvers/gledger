@@ -10,8 +10,8 @@ import (
 // Account is the
 type Account struct {
 	Name           string
-	Path           string
-	PathComponents []string
+	Path           string   // Set by newAccountWithChildren
+	PathComponents []string // Set by newAccountWithChildren
 	Amount         Amount
 	Parent         *Account
 	Children       map[string]*Account

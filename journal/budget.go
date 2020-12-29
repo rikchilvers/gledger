@@ -59,6 +59,11 @@ func (b *Budget) AddPosting(p *Posting, pt PostingType) error {
 		b.Months[normaliseToMonth(p.Transaction.Date)] = bm
 	}()
 
+	// wireUpPosting
+	if p.Account != nil {
+		panic("p.Account != nil")
+	}
+
 	// Don't add the BudgetRoot to the budget
 	// Instead, roll it in to the EnvelopeRoot
 	if pt == EnvelopePosting && p.AccountPath == BudgetRootID {
@@ -66,21 +71,30 @@ func (b *Budget) AddPosting(p *Posting, pt PostingType) error {
 		return nil
 	}
 
+	// Choose root
+	var root *Account
+	switch pt {
+	case ExpensePosting:
+		root = bm.ExpenseRoot
+	case EnvelopePosting:
+		root = bm.EnvelopeRoot
+	}
+
+	pathComponents := strings.Split(p.AccountPath, ":")
+	if pt == ExpensePosting {
+		// strip 'Expenses' from the path components
+		pathComponents = strings.Split(p.AccountPath, ":")[1:]
+	}
+
+	// Assign an account to the posting
+	p.Account = root.FindOrCreateAccount(pathComponents)
+
 	// Set commodities
 	if bm.EnvelopeRoot.Amount.Commodity == "" {
 		bm.EnvelopeRoot.Amount.Commodity = p.Amount.Commodity
 	}
 	if bm.ExpenseRoot.Amount.Commodity == "" {
 		bm.ExpenseRoot.Amount.Commodity = p.Amount.Commodity
-	}
-
-	var pathComponents []string
-	switch pt {
-	case ExpensePosting:
-		// strip 'Expenses' from the path components
-		pathComponents = p.Account.PathComponents[1:]
-	case EnvelopePosting:
-		pathComponents = strings.Split(p.AccountPath, ":")
 	}
 
 	// Make the envelope account
