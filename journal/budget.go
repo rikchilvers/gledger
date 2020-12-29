@@ -10,7 +10,7 @@ type Budget struct {
 	Months map[time.Time]BudgetMonth // what was budgeted
 }
 
-func newBudget() Budget {
+func NewBudget() Budget {
 	return Budget{
 		Months: make(map[time.Time]BudgetMonth, 12),
 	}
@@ -44,7 +44,7 @@ const (
 	IncomePosting
 )
 
-func (b *Budget) addPosting(p *Posting, pt PostingType) error {
+func (b *Budget) AddPosting(p *Posting, pt PostingType) error {
 	if pt == IncomePosting {
 		return b.addIncomePosting(p)
 	}
@@ -137,11 +137,11 @@ func (b *Budget) addPosting(p *Posting, pt PostingType) error {
 }
 
 func (b *Budget) addEnvelopePosting(p *Posting) error {
-	return b.addPosting(p, EnvelopePosting)
+	return b.AddPosting(p, EnvelopePosting)
 }
 
 func (b *Budget) addExpensePosting(p *Posting) error {
-	return b.addPosting(p, ExpensePosting)
+	return b.AddPosting(p, ExpensePosting)
 }
 
 func (b *Budget) addIncomePosting(p *Posting) error {

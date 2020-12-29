@@ -37,7 +37,7 @@ func NewJournal(config ProcessingConfig) Journal {
 		periodicTransactions: make([]*PeriodicTransaction, 0, 256),
 		filePaths:            make([]string, 0, 10),
 		Root:                 NewAccount(RootID),
-		Budget:               newBudget(),
+		Budget:               NewBudget(),
 	}
 
 	return j
